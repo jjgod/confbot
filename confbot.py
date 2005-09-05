@@ -28,7 +28,7 @@ import traceback
 import urllib
 import ConfigParser
 
-version='1.5.(beta $Revision)'
+version='1.5'
 commandchrs = '/)'
 
 logf = open(time.strftime("%Y%m%d%H%M%S.log"),"w")
