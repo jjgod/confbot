@@ -28,7 +28,7 @@ import traceback
 import urllib
 import ConfigParser
 
-version='1.5'
+version='1.5.1'
 commandchrs = '/)'
 
 logf = open(time.strftime("%Y%m%d%H%M%S.log"),"w")
@@ -380,6 +380,7 @@ def readoptionorprompt(config,option,description):
 
 def readconfig():
 	global account,server,password,topic,resource,private,userinfo
+	global hide_status
 	config = ConfigParser.ConfigParser()
 	# Defaults
 	if not config.has_section("general"): config.add_section("general")
