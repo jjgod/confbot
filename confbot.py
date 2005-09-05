@@ -28,7 +28,7 @@ import traceback
 import urllib
 import ConfigParser
 
-version='1.4'
+version='1.5.(beta $Revision)'
 commandchrs = '/)'
 
 userinfo={}
@@ -39,6 +39,7 @@ last_activity=time.time()
 con=None
 private=0
 lastlog = []
+hide_status = 0
 
 def getdisplayname(x):
 	"Changes a user@domain/resource to a displayable nick (user)"
@@ -69,6 +70,7 @@ password: %(password)s
 topic: %(topic)s
 resource: %(resource)s
 private: %(private)s
+hide_status: %(hide_status)s
 
 ; User flags supported:
 ;  admin: Admin user
@@ -83,6 +85,7 @@ private: %(private)s
 			"topic":topic,
 			"resource":resource,
 			"private":private,
+			"hide_status":hide_status,
 			}
 	for jid,flags in userinfo.items():
 		print >>a,"%(jid)s: %(flags)s" % {
@@ -162,6 +165,9 @@ def sendstatus(who,txt,msg):
 		# Suppress initial status
 		return
 	if suppressing:
+		return
+	# If we are hiding status changes, skip displaying them
+	if not hide_status:
 		return
 	if msg:
 		sendtoall('*** %s is %s (%s)' % (who,txt,msg),including=[who])
@@ -379,6 +385,7 @@ def readconfig():
 	config.set("general","server","gmail.com")
 	config.set("general","resource","resource")
 	config.set("general","private",0)
+	config.set("general","hide_status",0)
 
 	if len(sys.argv)>1:
 		config.read(sys.argv[1])
@@ -390,6 +397,7 @@ def readconfig():
 	topic = readoptionorprompt(config,"topic","Write a short description about your bot")
 	resource = config.get("general","resource")
 	private = config.getboolean("general","private")
+	hide_status = config.getboolean("general","hide_status")
 
 	if config.has_section("userinfo"):
 		for i in config.options("userinfo"):
