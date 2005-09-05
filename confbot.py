@@ -31,15 +31,16 @@ import ConfigParser
 version='1.5.(beta $Revision)'
 commandchrs = '/)'
 
-userinfo={}
 logf = open(time.strftime("%Y%m%d%H%M%S.log"),"w")
 xmllogf = open("xmpp.log","w")
 last_activity=time.time()
-#xmllogf = sys.stderr
 con=None
-private=0
+#xmllogf = sys.stderr
+
+userinfo={}
 lastlog = []
-hide_status = 0
+hide_status = "0"
+private="0"
 
 def getdisplayname(x):
 	"Changes a user@domain/resource to a displayable nick (user)"
@@ -384,8 +385,8 @@ def readconfig():
 	if not config.has_section("general"): config.add_section("general")
 	config.set("general","server","gmail.com")
 	config.set("general","resource","resource")
-	config.set("general","private",0)
-	config.set("general","hide_status",0)
+	config.set("general","private",private)
+	config.set("general","hide_status",hide_status)
 
 	if len(sys.argv)>1:
 		config.read(sys.argv[1])
