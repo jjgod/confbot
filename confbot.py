@@ -499,7 +499,7 @@ def readoptionorprompt(section, option, description):
 	val = conf[section].get(option)
 	if not val:
 		print description,
-		conf[section][option] = raw_input([option])
+		conf[section][option] = raw_input()
 	
 def readconfig():
 	global conf, welcome, userinfo
@@ -547,6 +547,8 @@ def readconfig():
 	encoding = conf['general']['configencoding']
 	conf['general']['sysprompt'] = unicode(conf['general']['sysprompt'], encoding)
 	conf['general']['topic'] = unicode(conf['general']['topic'], encoding)
+	for key, value in conf['emotes'].items():
+		conf['emotes'][key] = unicode(value, encoding)
 	
 	if not conf.has_key('userinfo'):
 		conf['userinfo'] ={}
@@ -560,7 +562,7 @@ def readconfig():
 		else:
 			print _("Input super admin email account:"),
 			admin = raw_input()
-			conf['userinfo'][admin] = ['admin', 'super']
+			conf['userinfo'][admin] = ['super']
 			
 	#deal with welcome message
 	if os.path.exists('welcome.txt'):
@@ -574,6 +576,9 @@ def saveconfig():
 	encoding = conf['general']['configencoding']
 	conf['general']['sysprompt'] = conf['general']['sysprompt'].encode('utf-8')
 	conf['general']['topic'] = conf['general']['topic'].encode('utf-8')
+	for key, value in conf['emotes'].items():
+		conf['emotes'][key] = value.encode('utf-8')
+		
 	conf.write()
 	file('welcome.txt', 'w').write(welcome.encode('utf-8'))
 
