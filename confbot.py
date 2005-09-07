@@ -396,7 +396,7 @@ def cmd_status(who, msg):
 		systoone(who, _('Status: %s') % " ".join(status))
 	
 def cmd_version(who, msg):
-	systoone(who, _('Version: %s ($Revision)\nSee http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.') % version)
+	systoone(who, _('Version: %s ($Revision$)\nSee http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.') % version)
 
 def messageCB(con,msg):
 	if msg.getError()!=None:
