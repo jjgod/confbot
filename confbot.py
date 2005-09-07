@@ -68,8 +68,7 @@ conf = None	#global config object
 welcome = _("""Welcome to ConferenceBot %(version)s
 By Isomer (Perry Lorier)
 This conference bot is set up to allow groups of people to chat.
-)help to list commands, )quit to quit
-""")
+)help to list commands, )quit to quit""")
 
 xmllogf = open("xmpp.log","w")
 last_activity=time.time()
@@ -155,7 +154,8 @@ def sendtoall(msg,butnot=[],including=[]):
 		if state in ['available','chat','online',None] or getdisplayname(i) in including:
 			sendtoone(i,msg)
 			time.sleep(.2)
-	lastlog.append(msg)
+	if not msg.startswith(conf['general']['sysprompt']):
+		lastlog.append(msg)
 	if len(lastlog)>5:
 		lastlog=lastlog[1:]
 		
@@ -338,8 +338,8 @@ def presenceCB(con,prs):
 		print "Unsubscribe from",who
 	elif type == 'subscribed':
 		systoone(who, welcome % {'version':version})
-		systoone(who, '''Topic: %(topic)s
-%(lastlog)s''' % {
+		systoone(who, _('''Topic: %(topic)s
+%(lastlog)s''') % {
 			"topic" : conf['general']['topic'],
 			"lastlog" : "\n".join(lastlog),
 			})
