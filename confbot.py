@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # confbot -- a conference bot for google talk.
-# Copyright (C) 2005 Perry Lorier (aka Isomer)
+# Copyright (C) 2005 Perry Lorier (aka Isomer) and Limodou
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +15,6 @@
 #      You should have received a copy of the GNU General Public License
 #      along with this program; if not, write to the Free Software
 #      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-# 
-# $Id$
 #
 # Limodou
 #    Update 2005/09/05:
@@ -31,6 +29,11 @@
 #    Update 2005/09/06
 #      * Add 'nochat' flag
 #      * Add /chat /nochat /status /version command
+#    Update 2005/09/07
+#      * Add listemotes command
+#      * Add addemote <action> <representation> command
+#      * Add setoption <option> value command you can control private, hide_status, debug, topic, sysprompt
+#      * Add showoption <option>
 #############################################################################################
 
 #i18n process
@@ -67,13 +70,13 @@ import traceback
 import urllib
 import os.path
 
-version=u'1.6'
+version='1.7'
 commandchrs = '/)'
 
 conf = None	#global config object
 userinfo = None
 welcome = _("""Welcome to ConferenceBot %(version)s
-By Isomer (Perry Lorier)
+By Isomer (Perry Lorier) and Limodou
 This conference bot is set up to allow groups of people to chat.
 )help to list commands, )quit to quit""")
 
@@ -245,12 +248,13 @@ def cmd_me(who, msg):
 		if emote:
 			emote = "_%s_" % emote
 		sendtoall(_('<%s> %s %s') % (getdisplayname(who),emote,msg), butnot=[getdisplayname(who)])
+		systoone(who, _('You %s %s') % (emote, msg))
 	
 def cmd_help(who, msg):
-	systoone(who, _('Commands: ")help" "/me" ")names" ")quit" ")msg" ")nochat" ")chat" ")status"'))
+	systoone(who, _('Commands: ")help" "/me" ")names" ")quit" ")msg" ")nochat" ")chat" ")status"' ")listemotes"))
 	if isadmin(who.getStripped()):
-		systoone(who, _('Admin commands: ")die" ")addadmin" ")deladmin" ")listadmins" ")kick" ")ban" ")unban" ")listbans" ")invite"'))
-	systoone(who, _('See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details'))
+		systoone(who, _('Admin commands: ")die" ")addadmin" ")deladmin" ")listadmins" ")kick" ")listbans" ")ban" ")unban" ")invite" ")reload" ")addemote" ")delemote" ")listoptions" ")setoption"'))
+	systoone(who, _('See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\nAlso see http://www.donews.net/limodou for Chinese version.'))
 
 def cmd_names(who, msg):
 	r = con.getRoster()
@@ -284,9 +288,12 @@ def cmd_msg(who, msg):
 	if not ' ' in msg:
 		systoone(who, _('Usage: )msg <nick> <message>'))
 	else:
-		target,msg = msg.split(' ',1)
-		sendtoone(getjid(target), _('*<%s>* %s') % (getdisplayname(who),msg))
-		systoone(who,_('>%s> %s') % (getdisplayname(target),msg))
+		if has_userflag(msg.getFrom().getStripped(), 'nochat'):
+			systoone(who, _('Warning: Because you set "nochat" flag, so you can not receive and send any message from this bot, until you reset using "/chat" command')) 
+		else:
+			target,msg = msg.split(' ',1)
+			sendtoone(getjid(target), _('*<%s>* %s') % (getdisplayname(who),msg))
+			systoone(who,_('>%s> %s') % (getdisplayname(target),msg))
 
 def cmd_boot(who, msg):
 	cmd_kick(who, msg)
@@ -378,7 +385,7 @@ def cmd_reload(who, msg):
 
 def cmd_nochat(who, msg):
 	add_userflag(who.getStripped(), 'nochat')
-	systoone(who, _('Because you set "nochat" flag, so you can not receive and send any message from this bot, until you reset using "/chat" command')) 
+	systoone(who, _('Warning: Because you set "nochat" flag, so you can not receive and send any message from this bot, until you reset using "/chat" command')) 
 
 def cmd_chat(who, msg):
 	del_userflag(who.getStripped(), 'nochat')
@@ -396,7 +403,85 @@ def cmd_status(who, msg):
 		systoone(who, _('Status: %s') % " ".join(status))
 	
 def cmd_version(who, msg):
-	systoone(who, _('Version: %s ($Revision$)\nSee http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.') % version)
+	systoone(who, _('Version: %s ($Revision$)\nSee http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\nAlso see http://www.donews.net/limodou for Chinese version.') % version)
+
+def cmd_listemotes(who, msg):
+	emotes = conf['emotes']
+	txt = []
+	for key, value in emotes.items():
+		txt.append('%s : %s' % (key, value))
+	systoone(who, _('Emotes : \n%s') % '\n'.join(txt))
+	
+def cmd_addemote(who, msg):
+	msg = msg.strip()
+	if isadmin(who.getStripped()):
+		if not msg or ' ' not in msg:
+			systoone(who, _('Usage: /addemote action representation'))
+		else:
+			action, msg = msg.split(' ', 1)
+			conf['emotes'][action] = msg
+			saveconfig()
+			systoone(who, _('Success'))
+	else:
+		raise ADMIN_COMMAND
+
+def cmd_delemote(who, msg):
+	msg = msg.strip()
+	if isadmin(who.getStripped()):
+		if not msg:
+			systoone(who, _('Usage: /delemote <emote>'))
+		else:
+			if conf['emotes'].has_key(msg):
+				emotes = conf['emotes']
+				del emotes[msg]
+				conf['emotes'] = emotes
+				saveconfig()
+				systoone(who, _('Success'))
+			else:
+				systoone(who, _('Emote [%s] is not exist.') % msg)
+	else:
+		raise ADMIN_COMMAND
+
+options = ['private', 'hide_status', 'debug', 'topic', 'sysprompt']
+def cmd_setoption(who, msg):
+	msg = msg.strip()
+	if isadmin(who.getStripped()):
+		if not msg or ' ' not in msg:
+			systoone(who, _('Usage: /setoption <option> <value>'))
+		else:
+			option, msg = msg.split(' ', 1)
+			if option in options:
+				if option in ('private', 'hide_status', 'debug'):
+					if msg.lower() in ("1", "yes", "on", "true"):
+						value = 1
+					else:
+						value = 0
+				else:
+					value = msg
+				conf['general'][option] = value 
+				saveconfig()
+				systoone(who, _('Success'))
+			else:
+				systoone(who, _('Option [%s] may not exist or can not be set.') % option)
+	else:
+		raise ADMIN_COMMAND
+
+def cmd_listoptions(who, msg):
+	msg = msg.strip()
+	if isadmin(who.getStripped()):
+		txt = []
+		for option in options:
+			if option in ('private', 'hide_status', 'debug'):
+				if conf['general'][option]:
+					value = 'On'
+				else:
+					value = 'Off'
+			else:
+				value = conf['general'][option]
+			txt.append("%s : %s" % (option, value))
+		systoone(who, _('Options: \n%s') % '\n'.join(txt))
+	else:
+		raise ADMIN_COMMAND
 
 def messageCB(con,msg):
 	if msg.getError()!=None:
@@ -411,7 +496,7 @@ def messageCB(con,msg):
 		else:
 			#check nochat
 			if has_userflag(msg.getFrom().getStripped(), 'nochat'):
-				systoone(msg.getFrom().getStripped(), _('Because you set "nochat" flag, so you can not receive and send any message from this bot, until you reset using "/chat" command'))
+				systoone(msg.getFrom().getStripped(), _('Warning: Because you set "nochat" flag, so you can not receive and send any message from this bot, until you reset using "/chat" command'))
 			global suppressing,last_activity
 			suppressing=0
 			last_activity=time.time()
@@ -575,16 +660,19 @@ def readconfig():
 			
 def saveconfig():
 	"Saves the config to disk"
-	#encoding convert
-	encoding = conf['general']['configencoding']
-	conf['general']['sysprompt'] = conf['general']['sysprompt'].encode(encoding)
-	conf['general']['topic'] = conf['general']['topic'].encode(encoding)
-	for key, value in conf['emotes'].items():
-		conf['emotes'][key] = value.encode(encoding)
+	try:
+		#encoding convert
+		encoding = conf['general']['configencoding']
+		conf['general']['sysprompt'] = conf['general']['sysprompt'].encode(encoding)
+		conf['general']['topic'] = conf['general']['topic'].encode(encoding)
+		for key, value in conf['emotes'].items():
+			conf['emotes'][key] = value.encode(encoding)
+			
+		conf.write()
+		file('welcome.txt', 'w').write(welcome.encode(encoding))
+	except:
+		traceback.print_exc()
 		
-	conf.write()
-	file('welcome.txt', 'w').write(welcome.encode(encoding))
-
 def connect():
 	debug = conf['general']['debug']
 	
