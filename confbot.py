@@ -54,7 +54,7 @@ try:
 	t = gettext.translation('confbot', 'locale', [getdefaultencoding()])
 	t.install(unicode=1)
 except:
-	gettext.install('confbot', 'locale', 1)
+	_ = lambda x:x
 
 import socket
 import jabber
@@ -548,7 +548,8 @@ def readconfig():
 	conf['general']['sysprompt'] = unicode(conf['general']['sysprompt'], encoding)
 	conf['general']['topic'] = unicode(conf['general']['topic'], encoding)
 	for key, value in conf['emotes'].items():
-		conf['emotes'][key] = unicode(value, encoding)
+		if not isinstance(value, unicode):
+			conf['emotes'][key] = unicode(value, encoding)
 	
 	if not conf.has_key('userinfo'):
 		conf['userinfo'] ={}
@@ -574,13 +575,13 @@ def saveconfig():
 	"Saves the config to disk"
 	#encoding convert
 	encoding = conf['general']['configencoding']
-	conf['general']['sysprompt'] = conf['general']['sysprompt'].encode('utf-8')
-	conf['general']['topic'] = conf['general']['topic'].encode('utf-8')
+	conf['general']['sysprompt'] = conf['general']['sysprompt'].encode(encoding)
+	conf['general']['topic'] = conf['general']['topic'].encode(encoding)
 	for key, value in conf['emotes'].items():
-		conf['emotes'][key] = value.encode('utf-8')
+		conf['emotes'][key] = value.encode(encoding)
 		
 	conf.write()
-	file('welcome.txt', 'w').write(welcome.encode('utf-8'))
+	file('welcome.txt', 'w').write(welcome.encode(encoding))
 
 def connect():
 	debug = conf['general']['debug']
