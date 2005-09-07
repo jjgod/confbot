@@ -15,6 +15,8 @@
 #      You should have received a copy of the GNU General Public License
 #      along with this program; if not, write to the Free Software
 #      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# 
+# $Id$
 #
 # Limodou
 #    Update 2005/09/05:
@@ -65,7 +67,7 @@ import traceback
 import urllib
 import os.path
 
-version=u'1.6b'
+version=u'1.6'
 commandchrs = '/)'
 
 conf = None	#global config object
@@ -394,7 +396,7 @@ def cmd_status(who, msg):
 		systoone(who, _('Status: %s') % " ".join(status))
 	
 def cmd_version(who, msg):
-	systoone(who, _('Version: %s \nSee http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.') % version)
+	systoone(who, _('Version: %s ($Revision)\nSee http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.') % version)
 
 def messageCB(con,msg):
 	if msg.getError()!=None:
