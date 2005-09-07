@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: confbot 1.5b\n"
 "POT-Creation-Date: Tue Sep 06 11:05:19 2005\n"
-"PO-Revision-Date: 2005-09-07 09:22+0800\n"
+"PO-Revision-Date: 2005-09-07 15:22+0800\n"
 "Last-Translator: limodou <limodou@gmail.com>\n"
 "Language-Team: confbot <limodou@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Poedit-Country: CHINA\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
-#: ../confbot.py:68
+#: ../confbot.py:73
 msgid ""
 "Welcome to ConferenceBot %(version)s\n"
 "By Isomer (Perry Lorier)\n"
@@ -30,15 +30,23 @@ msgstr ""
 "\n"
 "/help 可以查看命令列表 /quit 退出聊天频道"
 
-#: ../confbot.py:184
+#: ../confbot.py:202
 msgid "%s is %s (%s)"
 msgstr "%s %s (%s)"
 
-#: ../confbot.py:186
+#: ../confbot.py:204
 msgid "%s is %s"
 msgstr "%s %s"
 
-#: ../confbot.py:206
+#: ../confbot.py:225
+msgid "This is admin command, you have no permision to use."
+msgstr "这是管理员命令，你无权使用。"
+
+#: ../confbot.py:227
+msgid "Unknown command %s"
+msgstr "未知的命令 %s"
+
+#: ../confbot.py:232
 msgid ""
 "Usage: /me <emote>\n"
 "Says an emote as you.  eg \"/me %(action)s <msg>\" shows as \"%(nick)s %(emote)s <msg>\" to everyone else"
@@ -47,21 +55,23 @@ msgstr ""
 "表现你的一种表情。如：/me %(action)s <msg>\n"
 "将表示为 %(nick)s %(emote)s <消息>"
 
-#: ../confbot.py:219
+#: ../confbot.py:245
 msgid "<%s> %s %s"
 msgstr "<%s> %s %s"
 
-#: ../confbot.py:221
-msgid "Commands: \")help\" \"/me\" \")names\" \")quit\" \")msg\""
+#: ../confbot.py:248
+msgid "Commands: \")help\" \"/me\" \")names\" \")quit\" \")msg\" \")nochat\" \")chat\" \")status\""
 msgstr ""
 "命令列表：\n"
 "/help        显示本帮助信息\n"
 "/me <emote> <msg> 设置表情串\n"
 "/names       显示聊天室人名\n"
 "/quit <msg>  退出聊天室，一旦退出需要重新加入\n"
-"/msg <nick> <msg>  私聊"
+"/msg <nick> <msg>  私聊\n"
+"/nochat      置为非聊天状态，不接收和发送任何信息\n"
+"/chat        置为聊天状态"
 
-#: ../confbot.py:223
+#: ../confbot.py:250
 msgid "Admin commands: \")die\" \")addadmin\" \")deladmin\" \")listadmins\" \")kick\" \")ban\" \")unban\" \")listbans\" \")invite\""
 msgstr ""
 "管理员命令列表: \n"
@@ -76,118 +86,144 @@ msgstr ""
 "/invite <nick>   邀请某人加入聊天\n"
 "/reload          重新装入配置信息"
 
-#: ../confbot.py:224
+#: ../confbot.py:251
 msgid "See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details"
 msgstr ""
 "查看 http://coders.meta.net.nz/~perry/jabber/confbot.php 以了解更多的细节。\n"
 "查看 http://www.donews.net/limodou 了解关于汉化版的细节"
 
-#: ../confbot.py:237
+#: ../confbot.py:267
 msgid "Names: %s"
 msgstr "聊天名单: %s"
 
-#: ../confbot.py:241
+#: ../confbot.py:278
 msgid "Quit: <%s> %s"
 msgstr "<%s> 已经退出 %s"
 
-#: ../confbot.py:245
+#: ../confbot.py:283
 msgid "Usage: )msg <nick> <message>"
 msgstr "用法：/msg <nick> <message>"
 
-#: ../confbot.py:248
+#: ../confbot.py:286
 msgid "*<%s>* %s"
 msgstr "<%s> _对你悄悄说_ ：%s"
 
-#: ../confbot.py:249
+#: ../confbot.py:287
 msgid ">%s> %s"
 msgstr "你对 <%s> _悄悄说_ ：%s"
 
-#: ../confbot.py:252
+#: ../confbot.py:295
 msgid "Booted: <%s>"
 msgstr "<%s> 已经被踢出去了"
 
-#: ../confbot.py:256
+#: ../confbot.py:303
 msgid "Banned: <%s>"
 msgstr "<%s> 已经被禁止加入了"
 
-#: ../confbot.py:259
+#: ../confbot.py:310
 msgid "Unbanned: <%s>"
 msgstr "<%s> 已经被取消禁止了"
 
-#: ../confbot.py:261
+#: ../confbot.py:312
 msgid "%s is not banned"
 msgstr "%s 没有被禁止"
 
-#: ../confbot.py:263
+#: ../confbot.py:318
 msgid "Banned list: %s"
 msgstr "被禁止名单: %s"
 
-#: ../confbot.py:267
+#: ../confbot.py:326
 msgid "Invited <%s>"
 msgstr "<%s> 已经被邀请"
 
-#: ../confbot.py:270
+#: ../confbot.py:334
 msgid "Added <%s>"
 msgstr "<%s> 已经被加入"
 
-#: ../confbot.py:271
+#: ../confbot.py:335
 msgid "<%s> added you as an admin"
 msgstr "<%s> 已经把你加为管理员"
 
-#: ../confbot.py:274
+#: ../confbot.py:337
+#, fuzzy
+msgid "You are an admin already."
+msgstr "你已经是管理员了。"
+
+#: ../confbot.py:344
 msgid "<%s> is a super admin which can not be deleted."
 msgstr "<%s> 是超级管理员不能被删除"
 
-#: ../confbot.py:277
+#: ../confbot.py:347
 msgid "Removed <%s>"
 msgstr "<%s> 已经被删除"
 
-#: ../confbot.py:278
+#: ../confbot.py:348
 msgid "<%s> removed you as an admin"
 msgstr "<%s> 已经取消你的管理员资格"
 
-#: ../confbot.py:280
+#: ../confbot.py:350
 msgid "<%s> is not an admin"
 msgstr "<%s> 不是一个管理员"
 
-#: ../confbot.py:282
+#: ../confbot.py:356
 msgid "Admins: %s"
 msgstr "管理员列表: %s"
 
-#: ../confbot.py:285
+#: ../confbot.py:363
 msgid "Admin shutdown by <%s> (%s)"
 msgstr "聊天频道被 <%s> 关闭 (%s)"
 
-#: ../confbot.py:287
+#: ../confbot.py:365
 msgid "Admin shutdown by <%s>"
 msgstr "聊天频道被 <%s> 关闭"
 
-#: ../confbot.py:291
+#: ../confbot.py:373
 msgid "Config reloaded"
 msgstr "配置信息已经被刷新"
 
-#: ../confbot.py:293
-msgid "Unknown command %s"
-msgstr "未知的命令 %s"
+#: ../confbot.py:379
+#: ../confbot.py:412
+msgid "Because you set \"nochat\" flag, so you can not receive and send any message from this bot, until you reset using \"/chat\" command"
+msgstr "因为你设置了 \"nochat\" 标志，所以你不能从本机器人接收和发送任何消息，直到你使用\"chat\"命令重设"
 
-#: ../confbot.py:298
+#: ../confbot.py:383
+msgid "You can begin to chat now."
+msgstr "你现在可以开始聊天了。"
+
+#: ../confbot.py:389
+#: ../confbot.py:394
+msgid "Status: %s"
+msgstr "状态： %s"
+
+#: ../confbot.py:391
+msgid "User %s is not exists."
+msgstr "用户 %s 不存在。"
+
+#: ../confbot.py:397
+msgid "See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details."
+msgstr ""
+"查看 http://coders.meta.net.nz/~perry/jabber/confbot.php 以了解更多的细节。\n"
+"查看 http://www.donews.net/limodou 了解关于汉化版的细节。\n"
+"查看 http://wiki.woodpecker.org.cn/moin/GoogleTalkBot 了解更多体验。"
+
+#: ../confbot.py:402
 msgid "Blocked"
 msgstr "被封锁"
 
-#: ../confbot.py:298
-#: ../confbot.py:358
-#: ../confbot.py:360
-#: ../confbot.py:362
-#: ../confbot.py:364
-#: ../confbot.py:368
+#: ../confbot.py:402
+#: ../confbot.py:465
+#: ../confbot.py:467
+#: ../confbot.py:469
+#: ../confbot.py:471
+#: ../confbot.py:475
 msgid "away"
 msgstr "不在"
 
-#: ../confbot.py:302
+#: ../confbot.py:406
 msgid "%s is being a moron trying to flood the channel"
 msgstr "%s 正在对聊天频道刷屏"
 
-#: ../confbot.py:313
+#: ../confbot.py:420
 msgid ""
 "Warning: You are marked as \"busy\" in your client,\n"
 "you will not see other people talk,\n"
@@ -197,15 +233,15 @@ msgstr ""
 "你将不会收到其他人的谈话，在客户端将你自已\n"
 "设为\"在线(available)\"才可以看到别人的回复"
 
-#: ../confbot.py:325
+#: ../confbot.py:432
 msgid "You are banned"
 msgstr "你被禁止加入聊天频道"
 
-#: ../confbot.py:329
+#: ../confbot.py:436
 msgid "This is a private conference bot"
 msgstr "这是一个私人聊天频道"
 
-#: ../confbot.py:341
+#: ../confbot.py:448
 msgid ""
 "Topic: %(topic)s\n"
 "%(lastlog)s"
@@ -213,68 +249,68 @@ msgstr ""
 "主题: %(topic)s\n"
 "%(lastlog)s"
 
-#: ../confbot.py:346
+#: ../confbot.py:453
 msgid "joining"
 msgstr "加入"
 
-#: ../confbot.py:346
-#: ../confbot.py:356
+#: ../confbot.py:453
+#: ../confbot.py:463
 msgid "here"
 msgstr "在线"
 
-#: ../confbot.py:352
+#: ../confbot.py:459
 msgid "<%s> has left"
 msgstr "<%s> 已经离开了"
 
-#: ../confbot.py:382
+#: ../confbot.py:489
 msgid "Feature not implemented"
 msgstr "此特性尚未实现"
 
-#: ../confbot.py:420
+#: ../confbot.py:527
 msgid "cries"
 msgstr "哭着"
 
-#: ../confbot.py:421
+#: ../confbot.py:528
 msgid "jumps"
 msgstr "跳起来"
 
-#: ../confbot.py:422
+#: ../confbot.py:529
 msgid "hops"
 msgstr "单脚跳着"
 
-#: ../confbot.py:423
+#: ../confbot.py:530
 msgid "sighs"
 msgstr "唉着气"
 
-#: ../confbot.py:424
+#: ../confbot.py:531
 msgid "farts"
 msgstr "放着屁"
 
-#: ../confbot.py:425
+#: ../confbot.py:532
 msgid "smiles"
 msgstr "微笑"
 
-#: ../confbot.py:426
+#: ../confbot.py:533
 msgid "keels over and dies"
 msgstr "翻倒在地死掉了"
 
-#: ../confbot.py:427
+#: ../confbot.py:534
 msgid "claps"
 msgstr "拍着手"
 
-#: ../confbot.py:430
+#: ../confbot.py:537
 msgid "What is the account name of your bot:"
 msgstr "你的Bot帐户名："
 
-#: ../confbot.py:431
+#: ../confbot.py:538
 msgid "What is the password of your bot:"
 msgstr "你的Bot口令："
 
-#: ../confbot.py:432
+#: ../confbot.py:539
 msgid "Write a short description about your bot:"
 msgstr "写下关于你的Bot的简短描述："
 
-#: ../confbot.py:454
+#: ../confbot.py:561
 msgid "Input super admin email account:"
 msgstr "请输入超级管理员邮件帐户："
 
