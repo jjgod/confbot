@@ -236,7 +236,9 @@ def cmd(who,msg):
 				names.append('(%s)' % name)
 		systoone(who, _('Names: %s') % " ".join(names))
 	elif cmd in ["quit","leave","exit"]:
-		systoall(_('Quit: <%s> (%s)') % (getdisplayname(who),msg))
+		if msg:
+			msg = "(%s)" % msg
+		systoall(_('Quit: <%s> %s') % (getdisplayname(who),msg))
 		boot(who.getStripped())
 	elif cmd in ['msg']:
 		if not ' ' in msg:
@@ -335,7 +337,7 @@ def presenceCB(con,prs):
 		boot(prs.getFrom().getStripped())
 		print "Unsubscribe from",who
 	elif type == 'subscribed':
-		systoone(who, welcome % version)
+		systoone(who, welcome % {'version':version})
 		systoone(who, '''Topic: %(topic)s
 %(lastlog)s''' % {
 			"topic" : conf['general']['topic'],
