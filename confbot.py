@@ -16,92 +16,94 @@
 #      along with this program; if not, write to the Free Software
 #      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# You shouldn't have to change anything below this line
-# Configuration is now done the first time you run the bot
+# Limodou
+#    Update 2005/09/05:
+#      * Multilanguage support
+#      * Add debug flag
+#      * Add logpath option
+#      * Add language option
+#      * Add emotes option
+#      * Add Chinese translation po file
+#      * Add sysprompt option and add systoone systoall function
+#      * Add super admin flag
+#############################################################################################
+
+import sys
+from configobj import ConfigObj
+def getdefaultencoding():
+	if len(sys.argv)>1:
+		conf = ConfigObj(sys.argv[1])
+	else:
+		conf = ConfigObj("confbot.ini")
+	try:
+		encoding = conf['general']['language']
+	except:
+		encoding = ''
+	if not encoding:
+		import locale
+		encoding = locale.getdefaultlocale()[0]
+	return encoding
+
+#install gettext process
+import gettext
+try:
+	t = gettext.translation('confbot', 'locale', [getdefaultencoding()])
+	t.install(unicode=1)
+except:
+	gettext.install('confbot', 'locale', 1)
+
 import socket
 import jabber
 import xmlstream
-import sys
 import time
 import random
 import traceback
 import urllib
-import ConfigParser
+import os.path
 
-version='1.5.1'
+version=u'1.6'
 commandchrs = '/)'
 
-logf = open(time.strftime("%Y%m%d%H%M%S.log"),"w")
+conf = None	#global config object
+welcome = _("""Welcome to ConferenceBot %(version)s
+By Isomer (Perry Lorier)
+This conference bot is set up to allow groups of people to chat.
+)help to list commands, )quit to quit
+""")
+
 xmllogf = open("xmpp.log","w")
 last_activity=time.time()
-con=None
 #xmllogf = sys.stderr
-
-userinfo={}
+con=None
 lastlog = []
-hide_status = "0"
-private="0"
 
 def getdisplayname(x):
 	"Changes a user@domain/resource to a displayable nick (user)"
+	server = conf['general']['server']
 	x=unicode(x)
 	if '/' in x:
-		x=x[:x.find("/")]
-	if '@' in x and x[x.find('@'):]=="@"+server:
-		x=x[:x.find("@")]
+		x = x[:x.find("/")]
+	if '@' in x and x[x.find('@'):] == "@" + server:
+		x = x[:x.find("@")]
 	return x
 
 def getjid(x):
 	"returns a full jid from a display name"
+	server = conf['general']['server']
 	if '@' not in x:
-		x=x+"@"+server
+		x = x + "@" + server
 	return x
-
-def saveconfig():
-	"Saves the config to disk"
-	if len(sys.argv)>1:
-		a=open(sys.argv[1],"w")
-	else:
-		a=open("confbot.ini","w")
-	print >>a,"""; Confbot config written %(date)s by version %(version)s
-[general]
-account: %(account)s
-server: %(server)s
-password: %(password)s
-topic: %(topic)s
-resource: %(resource)s
-private: %(private)s
-hide_status: %(hide_status)s
-
-; User flags supported:
-;  admin: Admin user
-;  user: User is allowed to join private rooms
-;  banned: User is not allowed to join
-[userinfo]""" % {
-			"date":time.strftime("%Y-%m-%d %H:%M:%S"),
-			"version":version,
-			"account":account,
-			"server":server,
-			"password":password,
-			"topic":topic,
-			"resource":resource,
-			"private":private,
-			"hide_status":hide_status,
-			}
-	for jid,flags in userinfo.items():
-		print >>a,"%(jid)s: %(flags)s" % {
-			"jid" : jid,
-			"flags": " ".join(flags),
-			}
 
 def has_userflag(jid,flag):
 	"return true if the user is a userflag"
+	userinfo = conf['userinfo']
 	if not userinfo.has_key(getjid(jid)):
 		return 0 # False
 	return flag in userinfo[getjid(jid)]
 
 def del_userflag(jid,flag):
 	"del an flag, return 0 if they didn't have the flag"
+	userinfo = conf['userinfo']
 	if not has_userflag(jid,flag):
 		return 0
 	userinfo[getjid(jid)].remove(flag)
@@ -112,6 +114,7 @@ def del_userflag(jid,flag):
 
 def add_userflag(jid,flag):
 	"add an flag to a user, return 0 if they already have that flag"
+	userinfo = conf['userinfo']
 	if has_userflag(jid,flag):
 		return 0
 	if not userinfo.has_key(getjid(jid)):
@@ -143,7 +146,8 @@ def sendtoall(msg,butnot=[],including=[]):
 	r = con.getRoster()
 	print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"),msg.encode("utf-8")
 	logf.flush()
-	print time.strftime("%Y-%m-%d %H:%M:%S"),msg.encode("utf-8")
+	if conf['general']['debug']:
+		print time.strftime("%Y-%m-%d %H:%M:%S"), msg
 	for i in r.getJIDs():
 		if getdisplayname(i) in butnot:
 			continue
@@ -154,6 +158,12 @@ def sendtoall(msg,butnot=[],including=[]):
 	lastlog.append(msg)
 	if len(lastlog)>5:
 		lastlog=lastlog[1:]
+		
+def systoall(msg, butnot=[], including=[]):
+	sendtoall(conf['general']['sysprompt'] + ' ' + msg, butnot, including)
+	
+def systoone(who, msg):
+	sendtoone(who, conf['general']['sysprompt'] + ' ' + msg)
 
 statuses={}
 suppressing=1
@@ -168,12 +178,12 @@ def sendstatus(who,txt,msg):
 	if suppressing:
 		return
 	# If we are hiding status changes, skip displaying them
-	if not hide_status:
+	if not conf['general']['hide_status']:
 		return
 	if msg:
-		sendtoall('*** %s is %s (%s)' % (who,txt,msg),including=[who])
+		systoall(_('%s is %s (%s)') % (who,txt,msg),including=[who])
 	else:
-		sendtoall('*** %s is %s' % (who,txt),including=[who])
+		systoall(_('%s is %s') % (who,txt),including=[who])
 
 def boot(jid):
 	"Remove a user from the chatroom"
@@ -183,6 +193,7 @@ def boot(jid):
 		del statuses[getdisplayname(jid)]
 
 def cmd(who,msg):
+	userinfo = conf['userinfo']
 	if " " in msg:
 		cmd,msg=msg.split(" ",1)
 	else:
@@ -191,18 +202,26 @@ def cmd(who,msg):
 		cmd=cmd[1:]
 	if cmd in ["me"]:
 		if msg.strip()=="":
-			action=random.choice(['jumps','cries','hops','sighs','farts','keels over and dies','smiles'])
-			sendtoone(who,'*** Usage: /me <emote>\nSays an emote as you.  eg "/me %(action)s" shows as "* %(nick)s %(action)s" to everyone else' % {
+			action=random.choice(conf['emotes'].keys())
+			systoone(who, _('Usage: /me <emote>\nSays an emote as you.  eg "/me %(action)s <msg>" shows as "%(nick)s %(emote)s <msg>" to everyone else') % {
 				"nick" : getdisplayname(who),
 				"action" : action,
+				"emote" : conf['emotes'][action]
 				})
 		else:
-			sendtoall('* %s %s' % (getdisplayname(who),msg),butnot=[getdisplayname(who)])
+			if " " in msg:
+				action, msg = msg.split(" ", 1)
+			else:
+				action, msg = "", msg
+			emote = conf['emotes'].get(action, "")
+			if emote:
+				emote = "_%s_" % emote
+			sendtoall(_('<%s> %s %s') % (getdisplayname(who),emote,msg), butnot=[getdisplayname(who)])
 	elif cmd in ["help"]:
-		sendtoone(who,"*** Commands: \")help\" \"/me\" \")names\" \")quit\" \")msg\"")
+		systoone(who, _("Commands: \")help\" \"/me\" \")names\" \")quit\" \")msg\""))
 		if isadmin(who.getStripped()):
-			sendtoone(who,'*** Admin commands: ")die" ")addadmin" ")deladmin" ")listadmins" ")kick" ")ban" ")unban" ")listbans" ")invite"')
-		sendtoone(who,'*** See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details')
+			systoone(who, _('Admin commands: ")die" ")addadmin" ")deladmin" ")listadmins" ")kick" ")ban" ")unban" ")listbans" ")invite"'))
+		systoone(who, _('See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details'))
 	elif cmd in ["names"]:
 		r = con.getRoster()
 		names=[]
@@ -215,67 +234,70 @@ def cmd(who,msg):
 				names.insert(0,name)
 			else:
 				names.append('(%s)' % name)
-		sendtoone(who,'*** Names: %s' % " ".join(names))
+		systoone(who, _('Names: %s') % " ".join(names))
 	elif cmd in ["quit","leave","exit"]:
-		sendtoall('*** Quit: %s (%s)' % (getdisplayname(who),msg))
+		systoall(_('Quit: <%s> (%s)') % (getdisplayname(who),msg))
 		boot(who.getStripped())
 	elif cmd in ['msg']:
 		if not ' ' in msg:
-			sendtoone(who,'*** Usage: )msg <nick> <message>')
+			systoone(who, _('Usage: )msg <nick> <message>'))
 		else:
 			target,msg = msg.split(' ',1)
-			sendtoone(getjid(target),'*%s* %s' % (getdisplayname(who),msg))
-			sendtoone(who,'>%s> %s' % (getdisplayname(target),msg))
+			sendtoone(getjid(target), _('*<%s>* %s') % (getdisplayname(who),msg))
+			systoone(who,_('>%s> %s') % (getdisplayname(target),msg))
 	elif cmd in ['kick','boot'] and isadmin(who.getStripped()):
 		boot(getjid(msg.strip()))
-		sendtoall('*** Booted: %s' % msg.strip())
+		systoall(_('Booted: <%s>') % msg.strip())
 	elif cmd in ['ban'] and isadmin(who.getStripped()):
 		boot(getjid(msg.strip()))
 		addban(getjid(msg.strip()))
-		sendtoall('*** Banned: %s' % msg.strip())
+		systoall(_('Banned: <%s>') % msg.strip())
 	elif cmd in ['unban'] and isadmin(who.getStripped()):
 		if delban(getjid(msg.strip())):
-			sendtoone(who,'*** Unbanned: %s' % getjid(msg.strip()))
+			systoone(who, _('Unbanned: <%s>') % getjid(msg.strip()))
 		else:
-			sendtoone(who,'*** %s is not banned' % getjid(msg.strip()))
+			systoone(who, _('%s is not banned') % getjid(msg.strip()))
 	elif cmd in ['listbans'] and isadmin(who.getStripped()):
-		sendtoone(who,'*** Banned: %s' % " ".join([user for user,data in userinfo.items() if isbanned(user)]))
+		systoone(who, _('Banned list: %s') % " ".join([user for user,data in userinfo.items() if isbanned(user)]))
 	elif cmd in ['invite'] and isadmin(who.getStripped()):
 		con.send(jabber.Presence(to=getjid(msg.strip()), type='subscribe'))
 		adduser(getjid(msg.strip()))
-		sendtoone(who,'*** Invited %s' % getjid(msg.strip()))
+		systoone(who, _('Invited <%s>') % getjid(msg.strip()))
 	elif cmd in ['addadmin'] and isadmin(who.getStripped()):
 		addadmin(msg.strip())
-		sendtoone(who,'*** Added %s' % getjid(msg.strip()))
-		sendtoone(getjid(msg.strip()),'*** %s added you as an admin' % getdisplayname(who))
+		systoone(who, _('Added <%s>') % getjid(msg.strip()))
+		systoone(getjid(msg.strip()), _('<%s> added you as an admin') % getdisplayname(who))
 	elif cmd in ['deladmin'] and isadmin(who.getStripped()):
-		if deladmin(msg.strip()):
-			sendtoone(who,'*** Removed %s' % getjid(msg.strip()))
-			sendtoone(getjid(msg.strip()),'*** %s removed you as an admin' % getdisplayname(who))
+		if has_userflag(getjid(msg.strip()), 'super'):
+			systoone(who, _('<%s> is a super admin which can not be deleted.') % getjid(msg.strip()))
 		else:
-			sendtoone(who,'*** %s is not an admin' % getjid(msg.strip()))
+			if deladmin(msg.strip()):
+				systoone(who, _('Removed <%s>') % getjid(msg.strip()))
+				systoone(getjid(msg.strip()), _('<%s> removed you as an admin') % getdisplayname(who))
+			else:
+				systoone(who, _('<%s> is not an admin') % getjid(msg.strip()))
 	elif cmd in ['listadmins'] and isadmin(who.getStripped()):
-		sendtoone(who,'*** Admins: %s' % " ".join([user for user,data in userinfo.items() if isadmin(user)]))
+		systoone(who,_('Admins: %s') % " ".join([user for user,data in userinfo.items() if isadmin(user)]))
 	elif cmd in ['die'] and isadmin(who.getStripped()):
 		if msg.strip():
-			sendtoall('*** Admin shutdown by %s (%s)' % (who.getStripped(),msg))
+			systoall(_('Admin shutdown by <%s> (%s)') % (who.getStripped(),msg))
 		else:
-			sendtoall('*** Admin shutdown by %s' % who.getStripped())
+			systoall(_('Admin shutdown by <%s>') % who.getStripped())
 		sys.exit(1)
 	elif cmd in ['reload'] and isadmin(who.getStripped()):
 		readconfig()
-		sendtoone(who,'*** Config reloaded')
+		systoone(who, _('Config reloaded'))
 	else:
-		sendtoone(who,'Unknown command %s' % cmd)
+		systoone(who, _('Unknown command %s') % cmd)
 
 def messageCB(con,msg):
 	if msg.getError()!=None:
 		if statuses.has_key(getdisplayname(msg.getFrom())):
-			sendstatus(unicode(msg.getFrom()),"away","Blocked")
+			sendstatus(unicode(msg.getFrom()),_("away"), _("Blocked"))
 		boot(msg.getFrom().getStripped())
 	elif msg.getBody():
 		if len(msg.getBody())>1024:
-			sendtoall("*** %s is being a moron trying to flood the channel" % (getdisplayname(msg.getFrom())))
+			systoall(_("%s is being a moron trying to flood the channel") % (getdisplayname(msg.getFrom())))
 		elif msg.getBody()[:1] in commandchrs:
 			cmd(msg.getFrom(),msg.getBody())
 		else:
@@ -286,22 +308,23 @@ def messageCB(con,msg):
 				butnot=[getdisplayname(msg.getFrom())],
 				)
 			if con.getRoster().getShow(msg.getFrom().getStripped()) not in ['available','chat','online',None]:
-				sendtoone(msg.getFrom(),'*** Warning: You are marked as "busy" in your client,\nyou will not see other people talk,\nset yourself "available" in your client to see their replies.')
+				systoone(msg.getFrom(), _('Warning: You are marked as "busy" in your client,\nyou will not see other people talk,\nset yourself "available" in your client to see their replies.'))
 	xmllogf.flush() # just so flushes happen regularly
 
 
 def presenceCB(con,prs):
+	userinfo = conf['userinfo']
 	who = unicode(prs.getFrom())
 	type = prs.getType()
 	# TODO: Try only acking their subscription when they ack ours.
 	if type == 'subscribe':
 		print "Subscribe from",who,
 		if isbanned(prs.getFrom().getStripped()):
-			sendtoone(who,'*** You are banned')
+			systoone(who, _('You are banned'))
 			boot(prs.getFrom().getStripped())
 			print "Banned"
-		elif private and not isuser(prs.getFrom().getStripped()):
-			sendtoone(who,'*** This is a private conference bot')
+		elif conf['general']['private'] and not isuser(prs.getFrom().getStripped()):
+			systoone(who, _('This is a private conference bot'))
 			boot(prs.getFrom().getStripped())
 			print "Uninvited"
 		else:
@@ -312,40 +335,35 @@ def presenceCB(con,prs):
 		boot(prs.getFrom().getStripped())
 		print "Unsubscribe from",who
 	elif type == 'subscribed':
-		sendtoone(who,"""Welcome to ConferenceBot %(version)s
-By Isomer (Perry Lorier)
-This conference bot is set up to allow groups of people to chat.
-)help to list commands, )quit to quit
-*** Topic: %(topic)s
-%(lastlog)s
-""" % {
-			"version" : version,
-			"topic" : topic,
+		systoone(who, welcome % version)
+		systoone(who, '''Topic: %(topic)s
+%(lastlog)s''' % {
+			"topic" : conf['general']['topic'],
 			"lastlog" : "\n".join(lastlog),
 			})
-		sendstatus(who,'here','joining')
+		sendstatus(who, _('here'), _('joining'))
 		if userinfo=={}: # No admins?
 			# Add this user as the only admin
 			addadmin(who.getStripped())
 	elif type == 'unsubscribed':
 		boot(prs.getFrom().getStripped())
-		sendtoall('*** %s has left' % getdisplayname(who))
+		systoall(_('<%s> has left') % getdisplayname(who))
 	elif type == 'available' or type == None:
 		show = prs.getShow()
 		if show in [None,'chat','available','online']:
-			sendstatus(who,'here',prs.getStatus())
+			sendstatus(who, _('here'),prs.getStatus())
 		elif show in ['xa']:
-			sendstatus(who,'away',prs.getStatus())
+			sendstatus(who, _('away'),prs.getStatus())
 		elif show in ['away']:
-			sendstatus(who,'away',prs.getStatus())
+			sendstatus(who, _('away'),prs.getStatus())
 		elif show in ['dnd']:
-			sendstatus(who,'away',prs.getStatus())
+			sendstatus(who, _('away'),prs.getStatus())
 		else:
-			sendstatus(who,'away',show+" [[%s]]" % prs.getStatus())
+			sendstatus(who, _('away'),show+" [[%s]]" % prs.getStatus())
 
 	elif type == 'unavailable':
 		status = prs.getShow()
-		sendstatus(who,'away',status)
+		sendstatus(who, _('away'),status)
 	else:
 		print "Unknown presence:",who,type
 
@@ -359,7 +377,7 @@ def iqCB(con,iq):
 		stuff=iq._node.getChildren()
 		for i in stuff:
 			reply._node.insertNode(i)
-		reply.setError('501','Feature not implemented')
+		reply.setError('501', _('Feature not implemented'))
 		con.send(reply)
 	except:
 		traceback.print_exc()
@@ -367,87 +385,140 @@ def iqCB(con,iq):
 def disconnectedCB(con):
 	sys.exit(1)
 
-def readoptionorprompt(config,option,description):
+def readoptionorprompt(section, option, description):
 	"Read an option from the general section of the config, or prompt for it"
-	try:
-		return config.get("general",option)
-	except ConfigParser.NoOptionError:
-		print description
-		return raw_input("[%s] " % option)
-	except ConfigParser.NoSectionError:
-		print description
-		return raw_input("[%s] " % option)
-
+	val = conf[section].get(option)
+	if not val:
+		print description,
+		conf[section][option] = raw_input([option])
+	
 def readconfig():
-	global account,server,password,topic,resource,private,userinfo
-	global hide_status
-	config = ConfigParser.ConfigParser()
-	# Defaults
-	if not config.has_section("general"): config.add_section("general")
-	config.set("general","server","gmail.com")
-	config.set("general","resource","resource")
-	config.set("general","private",private)
-	config.set("general","hide_status",hide_status)
+	global conf, welcome
 
 	if len(sys.argv)>1:
-		config.read(sys.argv[1])
+		conf = ConfigObj(sys.argv[1])
 	else:
-		config.read("confbot.ini")
-	account = readoptionorprompt(config,"account","What is the account name of your bot?")
-	server = config.get("general","server")
-	password = readoptionorprompt(config,"password","What is the password of your bot?")
-	topic = readoptionorprompt(config,"topic","Write a short description about your bot")
-	resource = config.get("general","resource")
-	private = config.getboolean("general","private")
-	hide_status = config.getboolean("general","hide_status")
+		conf = ConfigObj("confbot.ini")
 
-	if config.has_section("userinfo"):
-		for i in config.options("userinfo"):
-			userinfo[i]=config.get("userinfo",i).split()
-	else:
-		try:
+	#set default value
+	if not conf.has_key('general'):
+		conf['general'] = {}
+	conf['general'].setdefault('server', 'gmail.com')
+	conf['general'].setdefault('resource', 'conference')
+	conf['general'].setdefault('private', 0)
+	conf['general'].setdefault('hide_status', 0)
+	conf['general'].setdefault('debug', 1)
+	conf['general'].setdefault('configencoding', 'utf-8')
+	conf['general'].setdefault('sysprompt', '***')	#system infomation prompt string
+	conf['general'].setdefault('logpath', '')
+	conf['general'].setdefault('language', '')
+	
+	if not conf.has_key('emotes'):
+		conf['emotes'] = {}
+	conf['emotes'].setdefault('cry', _('cries'))
+	conf['emotes'].setdefault('jump', _('jumps'))
+	conf['emotes'].setdefault('hop', _('hops'))
+	conf['emotes'].setdefault('sigh', _('sighs'))
+	conf['emotes'].setdefault('fart', _('farts'))
+	conf['emotes'].setdefault('smile', _('smiles'))
+	conf['emotes'].setdefault('keeldie', _('keels over and dies'))
+	conf['emotes'].setdefault('clap', _('claps'))
+
+	#get real value
+	readoptionorprompt('general', "account", _("What is the account name of your bot:"))
+	readoptionorprompt('general', "password", _("What is the password of your bot:"))
+	readoptionorprompt('general', "topic", _("Write a short description about your bot:"))
+	
+	#conver int value
+	conf['general']['private'] = int(conf['general']['private'])
+	conf['general']['hide_status'] = int(conf['general']['hide_status'])
+	conf['general']['debug'] = int(conf['general']['debug'])
+	
+	#encoding convert
+	encoding = conf['general']['configencoding']
+	conf['general']['sysprompt'] = unicode(conf['general']['sysprompt'], encoding)
+	conf['general']['topic'] = unicode(conf['general']['topic'], encoding)
+	
+	if not conf.has_key('userinfo'):
+		conf['userinfo'] ={}
+		if os.path.exists('adminlist.txt'):
 			adminfile = open("adminlist.txt","r")
 			admins=[i.strip() for i in adminfile.readlines()]
 			adminfile.close()
 			print "Migrating admin list"
 			for i in admins:
-				userinfo[i]=["admin"]
-		except:
-			print "Could not open admin file"
+				conf['userinfo'][i]=["admin"]
+		else:
+			print _("Input super admin email account:"),
+			admin = raw_input()
+			conf['userinfo'][admin] = ['admin', 'super']
+			
+	#deal with welcome message
+	if os.path.exists('welcome.txt'):
+		welcome = unicode(file('welcome.txt').read(), encoding)
+			
+def saveconfig():
+	"Saves the config to disk"
+	#encoding convert
+	encoding = conf['general']['configencoding']
+	conf['general']['sysprompt'] = conf['general']['sysprompt'].encode('utf-8')
+	conf['general']['topic'] = conf['general']['topic'].encode('utf-8')
+	conf.write()
+	file('welcome.txt', 'w').write(welcome.encode('utf-8'))
+
+def connect():
+	debug = conf['general']['debug']
+	
+	print "Connecting"
+	general = conf['general']
+	if debug:
+		print 'debug is [On]'
+		print 'host is [%s]' %general['server']
+		print 'account is [%s]' % general['account']
+		print 'resource is [%s]' % general['resource']
+	con = jabber.Client(host=general['server'],debug=False ,log=xmllogf,
+						port=5223, connection=xmlstream.TCP_SSL)
+	print "Logging in"
+	con.connect()
+	con.setMessageHandler(messageCB)
+	con.setPresenceHandler(presenceCB)
+	con.setIqHandler(iqCB)
+	con.setDisconnectHandler(disconnectedCB)
+	con.auth(general['account'], general['password'], general['resource'])
+	con.requestRoster()
+	con.sendInitPresence()
+	print "Online!"
+	_roster = con.getRoster()
+	return con
+
 
 readconfig()
+saveconfig()
 
-print "Connecting"
-con = jabber.Client(host=server,debug=False ,log=xmllogf,
-                    port=5223, connection=xmlstream.TCP_SSL)
-print "Logging in"
-con.connect()
-con.setMessageHandler(messageCB)
-con.setPresenceHandler(presenceCB)
-con.setIqHandler(iqCB)
-con.setDisconnectHandler(disconnectedCB)
-con.auth(account,password,resource)
-con.requestRoster()
-con.sendInitPresence()
-print "Online!"
-_roster = con.getRoster()
+#set system default encoding to support unicode
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
-JID="%s@%s/%s" % (account,server,resource)
+#logfile process
+logf = open(os.path.join(conf['general']['logpath'], time.strftime("%Y%m%d%H%M%S.log")),"w")
+
+general = conf['general']
+con = connect()
+JID="%s@%s/%s" % (general['account'], general['server'], general['resource'])
 last_update=0
 last_ping=0
-saveconfig()
 while 1:
 	# We announce ourselves to a url, this url then keeps track of all
 	# the conference bots that are running, and provides a directory
 	# for people to browse.
-	if time.time()-last_update>4*60*60 and not private: # every 4 hours
+	if time.time()-last_update>4*60*60 and not general['private']: # every 4 hours
 		args={
 			'action':'register',
-			'account':"%s@%s" % (account,server),
+			'account':"%s@%s" % (general['account'], general['server']),
 			'users':len(con.getRoster().getJIDs()),
 			'last_activity':time.time()-last_activity,
 			'version':version,
-			'topic':topic,
+			'topic':general['topic'],
 			}
 		try:
 			urllib.urlretrieve('http://coders.meta.net.nz/~perry/jabber/confbot.php?'+urllib.urlencode(args))
@@ -459,7 +530,21 @@ while 1:
 	# Send some kind of dummy message every few minutes to make sure that
 	# the connection is still up, and to tell google talk we're still
 	# here.
-	if time.time()-last_ping>120: # every 2 minutes
-		# Say we're online.
-		con.send(jabber.Presence())
-	con.process(1)
+	try:
+		if time.time()-last_ping>120: # every 2 minutes
+			# Say we're online.
+			con.send(jabber.Presence())
+		con.process(1)
+	except KeyboardInterrupt:
+		break
+	except SystemExit:
+		break
+	except:
+		traceback.print_exc()
+		try:
+			time.sleep(1)
+			con = connect()
+		except KeyboardInterrupt:
+			break
+		except:
+			traceback.print_exc()
