@@ -80,7 +80,8 @@ userinfo = None
 welcome = _("""Welcome to ConferenceBot %(version)s
 By Isomer (Perry Lorier) and Limodou
 This conference bot is set up to allow groups of people to chat.
-)help to list commands, )quit to quit""")
+")help" to list commands, ")quit" to quit
+")list en" for English, and ")list zh_CN" for Chinese""")
 
 xmllogf = open("xmpp.log","w")
 last_activity=time.time()
@@ -104,7 +105,7 @@ def getdisplayname(x):
 def getjid(x):
 	"returns a full jid from a display name"
 	server = conf['general']['server']
-	x = unicode(x)
+	x = getdisplayname(x)
 	if '@' not in x:
 		x = x + "@" + server
 	return x
