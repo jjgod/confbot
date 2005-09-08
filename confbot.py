@@ -38,6 +38,7 @@
 #      * Add lang <language> command to switch native lanauge for one user
 #      * Add switch multilang functionality on the fly
 #      * Add logfileformat option, so you can put one day log into one file
+#      * Add listlangs command shows available translation languages, en is default
 #############################################################################################
 
 #i18n process
@@ -103,6 +104,7 @@ def getdisplayname(x):
 def getjid(x):
 	"returns a full jid from a display name"
 	server = conf['general']['server']
+	x = unicode(x)
 	if '@' not in x:
 		x = x + "@" + server
 	return x
@@ -181,10 +183,9 @@ def isuser(jid):	return has_userflag(jid,"user")
 def deluser(jid):	return del_userflag(jid,"user")
 def adduser(jid):	return add_userflag(jid,"user")
 
-def sendtoone(who,msg):
-	msg.setlang(get_userlang(who.getStripped()))
-#	txt = msg.getvalue()
-#	print msg.msg, txt, msg.func(msg.msg)
+def sendtoone(who, msg):
+	if i18n.isobj(msg):
+		msg.setlang(get_userlang(getjid(who)))
 	m = jabber.Message(who, msg)
 	m.setType('chat')
 	con.send(m)
@@ -279,7 +280,7 @@ def cmd_me(who, msg):
 		systoone(who, _('You %s %s').para(emote, msg))
 	
 def cmd_help(who, msg):
-	systoone(who, _('Commands: ")help" "/me" ")names" ")quit" ")msg" ")nochat" ")chat" ")status" ")listemotes" ")lang"'))
+	systoone(who, _('Commands: ")help" "/me" ")names" ")quit" ")msg" ")nochat" ")chat" ")status" ")listemotes" ")lang" ")listlang"'))
 	if isadmin(who.getStripped()):
 		systoone(who, _('Admin commands: ")die" ")addadmin" ")deladmin" ")listadmins" ")kick" ")listbans" ")ban" ")unban" ")invite" ")reload" ")addemote" ")delemote" ")listoptions" ")setoption"'))
 	systoone(who, _('See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\nAlso see http://www.donews.net/limodou for Chinese version.'))
@@ -316,12 +317,15 @@ def cmd_msg(who, msg):
 	if not ' ' in msg:
 		systoone(who, _('Usage: )msg <nick> <message>'))
 	else:
-		if has_userflag(msg.getFrom().getStripped(), 'nochat'):
+		if has_userflag(who.getStripped(), 'nochat'):
 			systoone(who, _('Warning: Because you set "nochat" flag, so you can not receive and send any message from this bot, until you reset using "/chat" command')) 
-		else:
-			target,msg = msg.split(' ',1)
-			sendtoone(getjid(target), _('*<%s>* %s').para(getdisplayname(who),msg))
-			systoone(who,_('>%s> %s').para(getdisplayname(target),msg))
+			return
+		target,msg = msg.split(' ',1)
+		if has_userflag(target, 'nochat'):
+			systoone(who, _('<%s> has set himself in "nochat" mode, so you could not send him a message.').para(getjid(target))) 
+			return
+		sendtoone(getjid(target), _('*<%s>* %s').para(getdisplayname(who), msg))
+		systoone(who, _('>%s> %s').para(getdisplayname(target), msg))
 
 def cmd_boot(who, msg):
 	cmd_kick(who, msg)
@@ -397,7 +401,7 @@ def cmd_listadmins(who, msg):
 def cmd_die(who, msg):
 	if isadmin(who.getStripped()):
 		if msg.strip():
-			systoall(_('Admin shutdown by <%s> (%s)').para((who.getStripped(),msg)))
+			systoall(_('Admin shutdown by <%s> (%s)').para(who.getStripped(),msg))
 		else:
 			systoall(_('Admin shutdown by <%s>').para(who.getStripped()))
 		sys.exit(1)
@@ -519,12 +523,16 @@ def cmd_lang(who, msg):
 	else:
 		del_langflag(who.getStripped())
 		systoone(who, _('Your language has been set as default.'))
+		
+def cmd_listlangs(who, msg):
+	systoone(who, _('Available languages: %s').para(' '.join(i18n.listlang())))
 
 def messageCB(con,msg):
 	if msg.getError()!=None:
-		if statuses.has_key(getdisplayname(msg.getFrom())):
-			sendstatus(unicode(msg.getFrom()),_("away"), _("Blocked"))
-		boot(msg.getFrom().getStripped())
+		print >>logf, 'error', msg.getFrom(), msg.getError()
+#		if statuses.has_key(getdisplayname(msg.getFrom())):
+#			sendstatus(unicode(msg.getFrom()),_("away"), _("Blocked"))
+#		boot(msg.getFrom().getStripped())
 	elif msg.getBody():
 		if len(msg.getBody())>1024:
 			systoall(_("%s is being a moron trying to flood the channel").para(getdisplayname(msg.getFrom())))
@@ -769,22 +777,23 @@ while 1:
 	# We announce ourselves to a url, this url then keeps track of all
 	# the conference bots that are running, and provides a directory
 	# for people to browse.
-#	if time.time()-last_update>4*60*60 and not general['private']: # every 4 hours
-#		args={
-#			'action':'register',
-#			'account':"%s@%s" % (general['account'], general['server']),
-#			'users':len(con.getRoster().getJIDs()),
-#			'last_activity':time.time()-last_activity,
-#			'version':version,
-#			'topic':general['topic'],
-#			}
-#		try:
-#			urllib.urlretrieve('http://coders.meta.net.nz/~perry/jabber/confbot.php?'+urllib.urlencode(args))
-#			print "Updated directory site"
-#		except:
-#			print "Can't reach the directory site"
-#			traceback.print_exc()
-#		last_update = time.time()
+	if time.time()-last_update>4*60*60 and not general['private']: # every 4 hours
+		print 'Registing site'
+		args={
+			'action':'register',
+			'account':"%s@%s" % (general['account'], general['server']),
+			'users':len(con.getRoster().getJIDs()),
+			'last_activity':time.time()-last_activity,
+			'version':version,
+			'topic':general['topic'],
+			}
+		try:
+			urllib.urlretrieve('http://coders.meta.net.nz/~perry/jabber/confbot.php?'+urllib.urlencode(args))
+			print "Updated directory site"
+		except:
+			print "Can't reach the directory site"
+			traceback.print_exc()
+		last_update = time.time()
 	# Send some kind of dummy message every few minutes to make sure that
 	# the connection is still up, and to tell google talk we're still
 	# here.

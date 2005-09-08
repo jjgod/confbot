@@ -91,7 +91,10 @@ class BasicTR(object):
     
     def getvalue(self):
         if self.args:
-            value = self.func(self.msg) % self.args
+            if len(self.args) == 1 and isinstance(self.args[0], dict):
+                value = self.func(self.msg) % self.args[0]
+            else:
+                value = self.func(self.msg) % self.args
         else:
             value = self.func(self.msg)
         return ''.join(map(self._getvalue, self.pnodes)) + value + ''.join(map(self._getvalue, self.nnodes))
@@ -143,6 +146,15 @@ def install(domain, path, lang, func='_'):
     import __builtin__
     __builtin__.__dict__[func] = BasicTR
     
+def isobj(msg):
+    if isinstance(msg, BasicTR):
+        return True
+    else:
+        return False
+    
+def listlang():
+    return BasicTR.i18n.translation.keys() + ['en']
+
 if __name__ == '__main__':
     install('confbot', 'locale', 'zh_CN')
     
