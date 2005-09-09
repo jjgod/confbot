@@ -45,7 +45,9 @@
 #      * Remove listadmins and listbans command, because /names is ok
 #      * Add status command, so you can set bot's status
 #      * Fix bugs
-#############################################################################################
+#    Update 2005/09/09
+#      * Announce to the announceurl "super admins" (for contact) and "lang"
+################################################################################
 
 #i18n process
 import sys
@@ -209,7 +211,8 @@ def sendtoall(msg,butnot=[],including=[]):
 		if getdisplayname(i) in butnot:
 			continue
 		state=r.getShow(unicode(i))
-		if has_userflag(getdisplayname(i), 'nochat'): #nochat is represent user don't want to chat
+		#nochat is represent user don't want to chat
+		if has_userflag(getdisplayname(i), 'nochat'): 
 			continue
 		#process unavailabe user
 		if not userstatus.get(i, True):
@@ -237,7 +240,8 @@ def sendtoadmin(msg,butnot=[],including=[]):
 		if getdisplayname(i) in butnot:
 			continue
 		state=r.getShow(unicode(i))
-		if has_userflag(getdisplayname(i), 'nochat'): #nochat is represent user don't want to chat
+		#nochat is represent user don't want to chat
+		if has_userflag(getdisplayname(i), 'nochat'): 
 			continue
 		if state in ['available','chat','online',None] or getdisplayname(i) in including :
 			sendtoone(i,msg)
@@ -871,9 +875,9 @@ while 1:
 			
 		if not con:
 			connect()
-		# We announce ourselves to a url, this url then keeps track of all
-		# the conference bots that are running, and provides a directory
-		# for people to browse.
+		# We announce ourselves to a url, this url then keeps track of
+		# all the conference bots that are running, and provides a
+		# directory for people to browse.
 		if time.time()-last_update>4*60*60 and not general['private']: # every 4 hours
 			print '>>> Registing site'
 			args={
@@ -882,6 +886,12 @@ while 1:
 				'users':len(con.getRoster().getJIDs()),
 				'last_activity':time.time()-last_activity,
 				'version':version,
+				'admin':' '.join(
+					[x 
+						for k,v in userinfo.items() 
+						if "super" in v
+					]),
+				'lang': conf['general']['language'],
 				'topic':general['topic'],
 				}
 			try:
