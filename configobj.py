@@ -6,14 +6,13 @@
 
 # ConfigObj 4
 
-# Copyright Michael Foord and Nicola Larosa, 2004 & 2005.
 # Released subject to the BSD License
 # Please see http://www.voidspace.org.uk/documents/BSD-LICENSE.txt
 
 # Scripts maintained at http://www.voidspace.org.uk/python/index.shtml
 # For information about bugfixes, updates and support, please join the
-# Rest2Web mailing list:
-# http://lists.sourceforge.net/lists/listinfo/rest2web-develop
+# ConfigObj mailing list:
+# http://lists.sourceforge.net/lists/listinfo/configobj-develop
 # Comments, suggestions and bug reports welcome.
 
 """
@@ -42,9 +41,9 @@ StringTypes = (str, unicode)
 # the UTF8 BOM - from codecs module
 BOM_UTF8 = '\xef\xbb\xbf'
 
-__version__ = '4.0.0beta3'
+__version__ = '4.0.0beta4'
 
-__revision__ = '$Id: configobj.py 117 2005-08-25 12:42:18Z fuzzyman $'
+__revision__ = '$Id: configobj.py 121 2005-09-05 10:19:22Z fuzzyman $'
 
 __docformat__ = "restructuredtext en"
 
@@ -346,7 +345,7 @@ class Section(dict):
         else:
             self.sections.remove(key)
         del self.comments[key]
-        del self.inline_comments
+        del self.inline_comments[key]
 
     def get(self, key, default=None):
         """A version of ``get`` that doesn't bypass string interpolation."""
@@ -792,6 +791,9 @@ class ConfigObj(Section):
         elif isinstance(infile, dict):
             # initialise self
             # the Section class handles creating subsections
+            if isinstance(infile, ConfigObj):
+                # get a copy of our ConfigObj
+                infile = infile.dict()
             for entry in infile:
                 self[entry] = infile[entry]
             self.filename = None
@@ -2379,6 +2381,18 @@ if __name__ == '__main__':
     CHANGELOG
     =========
     
+    2005/09/07
+    ----------
+    
+    Fixed bug in initialising ConfigObj from a ConfigObj.
+    
+    Changed the mailing list address.
+    
+    2005/09/03
+    ----------
+    
+    Fixed bug in ``Section__delitem__`` oops.
+    
     2005/08/28
     ----------
     
@@ -2389,6 +2403,8 @@ if __name__ == '__main__':
     
     Moved the doctests from the ``__init__`` method to a separate function.
     (For the sake of IDE calltips).
+    
+    Beta 3
     
     2005/08/26
     ----------

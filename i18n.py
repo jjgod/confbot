@@ -19,7 +19,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-#   $Id: i18n.py,v 1.7 2004/11/12 01:16:54 limodou Exp $
+#   $Id: i18n.py 10 2005-09-09 04:00:08Z limodou $
 
 import gettext
 import glob
@@ -85,7 +85,10 @@ class BasicTR(object):
     def __str__(self):
         value = self.getvalue()
         if isinstance(value, unicode):
-            return value.encode(locale.getdefaultlocale()[1])
+            try:
+                return value.encode(locale.getdefaultlocale()[1])
+            except:
+                return value.encode('utf-8')
         else:
             return value
     
@@ -151,6 +154,12 @@ def isobj(msg):
         return True
     else:
         return False
+    
+def Unicode(msg, encoding):
+    if isobj(msg):
+        return msg.getvalue()
+    else:
+        return unicode(msg, encoding)
     
 def listlang():
     return BasicTR.i18n.translation.keys() + ['en']

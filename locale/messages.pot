@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: Thu Sep 08 20:48:56 2005\n"
+"POT-Creation-Date: Fri Sep 09 12:19:52 2005\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../confbot.py:80
+#: ../confbot.py:88
 msgid ""
 "Welcome to ConferenceBot %(version)s\n"
 "By Isomer (Perry Lorier) and Limodou\n"
@@ -24,310 +24,326 @@ msgid ""
 "\")list en\" for English, and \")list zh_CN\" for Chinese"
 msgstr ""
 
-#: ../confbot.py:237
+#: ../confbot.py:274
 msgid "%s is %s (%s)"
 msgstr ""
 
-#: ../confbot.py:239
+#: ../confbot.py:276
 msgid "%s is %s"
 msgstr ""
 
-#: ../confbot.py:260
+#: ../confbot.py:297
 msgid "This is admin command, you have no permision to use."
 msgstr ""
 
-#: ../confbot.py:262
+#: ../confbot.py:299
 msgid "Unknown command \"%s\"."
 msgstr ""
 
-#: ../confbot.py:267
+#: ../confbot.py:304
 msgid ""
 "Usage: /me <emote>\n"
 "Says an emote as you.  eg \"/me %(action)s <msg>\" shows as \"%(nick)s %(emote)s <msg>\" to everyone else"
 msgstr ""
 
-#: ../confbot.py:280
+#: ../confbot.py:317
 msgid "<%s> %s %s"
 msgstr ""
 
-#: ../confbot.py:281
+#: ../confbot.py:318
 msgid "You %s %s"
 msgstr ""
 
-#: ../confbot.py:284
+#: ../confbot.py:321
 msgid "Commands: \")help\" \"/me\" \")names\" \")quit\" \")msg\" \")nochat\" \")chat\" \")status\" \")listemotes\" \")lang\" \")listlang\""
 msgstr ""
 
-#: ../confbot.py:286
-msgid "Admin commands: \")die\" \")addadmin\" \")deladmin\" \")listadmins\" \")kick\" \")listbans\" \")ban\" \")unban\" \")invite\" \")reload\" \")addemote\" \")delemote\" \")listoptions\" \")setoption\""
+#: ../confbot.py:323
+msgid "Admin commands: \")die\" \")addadmin\" \")deladmin\" \")kick\" \")ban\" \")unban\" \")invite\" \")reload\" \")addemote\" \")delemote\" \")listoptions\" \")setoption\" \")restart\" \")status\""
 msgstr ""
 
-#: ../confbot.py:287
+#: ../confbot.py:324
 msgid ""
 "See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\n"
 "Also see http://www.donews.net/limodou for Chinese version."
 msgstr ""
 
-#: ../confbot.py:303
+#: ../confbot.py:342
 msgid ""
 "Names: \n"
 "%s"
 msgstr ""
 
-#: ../confbot.py:314
+#: ../confbot.py:353
 msgid "Quit: <%s> %s"
 msgstr ""
 
-#: ../confbot.py:319
+#: ../confbot.py:358
 msgid "Usage: )msg <nick> <message>"
 msgstr ""
 
-#: ../confbot.py:322 ../confbot.py:421 ../confbot.py:545
+#: ../confbot.py:361 ../confbot.py:454 ../confbot.py:609
 msgid "Warning: Because you set \"nochat\" flag, so you can not receive and send any message from this bot, until you reset using \"/chat\" command"
 msgstr ""
 
-#: ../confbot.py:326
+#: ../confbot.py:365
 msgid "<%s> has set himself in \"nochat\" mode, so you could not send him a message."
 msgstr ""
 
-#: ../confbot.py:328
+#: ../confbot.py:367
 msgid "*<%s>* %s"
 msgstr ""
 
-#: ../confbot.py:329
+#: ../confbot.py:368
 msgid ">%s> %s"
 msgstr ""
 
-#: ../confbot.py:337
+#: ../confbot.py:376
 msgid "Booted: <%s>"
 msgstr ""
 
-#: ../confbot.py:345
+#: ../confbot.py:384
 msgid "Banned: <%s>"
 msgstr ""
 
-#: ../confbot.py:352
+#: ../confbot.py:391
 msgid "Unbanned: <%s>"
 msgstr ""
 
-#: ../confbot.py:354
+#: ../confbot.py:393
 msgid "%s is not banned"
 msgstr ""
 
-#: ../confbot.py:360
+#: ../confbot.py:399
 msgid "Banned list: %s"
 msgstr ""
 
-#: ../confbot.py:368
+#: ../confbot.py:407
 msgid "Invited <%s>"
 msgstr ""
 
-#: ../confbot.py:376
+#: ../confbot.py:415
 msgid "Added <%s>"
 msgstr ""
 
-#: ../confbot.py:377
+#: ../confbot.py:416
 msgid "<%s> added you as an admin"
 msgstr ""
 
-#: ../confbot.py:379
+#: ../confbot.py:418
 msgid "You are an admin already."
 msgstr ""
 
-#: ../confbot.py:386
+#: ../confbot.py:425
 msgid "<%s> is a super admin which can not be deleted."
 msgstr ""
 
-#: ../confbot.py:389
+#: ../confbot.py:428
 msgid "Removed <%s>"
 msgstr ""
 
-#: ../confbot.py:390
+#: ../confbot.py:429
 msgid "<%s> removed you as an admin"
 msgstr ""
 
-#: ../confbot.py:392
+#: ../confbot.py:431
 msgid "<%s> is not an admin"
 msgstr ""
 
-#: ../confbot.py:398
-msgid "Admins: %s"
-msgstr ""
-
-#: ../confbot.py:405
+#: ../confbot.py:438
 msgid "Admin shutdown by <%s> (%s)"
 msgstr ""
 
-#: ../confbot.py:407
+#: ../confbot.py:440
 msgid "Admin shutdown by <%s>"
 msgstr ""
 
-#: ../confbot.py:415
+#: ../confbot.py:448
 msgid "Config reloaded"
 msgstr ""
 
-#: ../confbot.py:425
+#: ../confbot.py:458
 msgid "You can begin to chat now."
 msgstr ""
 
-#: ../confbot.py:431 ../confbot.py:436
+#: ../confbot.py:464 ../confbot.py:469
 msgid "Status: %s"
 msgstr ""
 
-#: ../confbot.py:433
+#: ../confbot.py:466
 msgid "User %s is not exists."
 msgstr ""
 
-#: ../confbot.py:439
+#: ../confbot.py:472
 msgid ""
 "Version: %s (%s)\n"
 "See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\n"
 "Also see http://www.donews.net/limodou for Chinese version."
 msgstr ""
 
-#: ../confbot.py:446
+#: ../confbot.py:479
 msgid ""
 "Emotes : \n"
 "%s"
 msgstr ""
 
-#: ../confbot.py:452
+#: ../confbot.py:485
 msgid "Usage: /addemote action representation"
 msgstr ""
 
-#: ../confbot.py:457 ../confbot.py:472 ../confbot.py:496
+#: ../confbot.py:490 ../confbot.py:505 ../confbot.py:529
 msgid "Success"
 msgstr ""
 
-#: ../confbot.py:465
+#: ../confbot.py:498
 msgid "Usage: /delemote <emote>"
 msgstr ""
 
-#: ../confbot.py:474
+#: ../confbot.py:507
 msgid "Emote [%s] is not exist."
 msgstr ""
 
-#: ../confbot.py:483
+#: ../confbot.py:516
 msgid "Usage: /setoption <option> <value>"
 msgstr ""
 
-#: ../confbot.py:498
+#: ../confbot.py:531
 msgid "Option [%s] may not exist or can not be set."
 msgstr ""
 
-#: ../confbot.py:515
+#: ../confbot.py:548
 msgid ""
 "Options: \n"
 "%s"
 msgstr ""
 
-#: ../confbot.py:523
+#: ../confbot.py:556
 msgid "Your language has been set as \"%s\"."
 msgstr ""
 
-#: ../confbot.py:526
+#: ../confbot.py:559
 msgid "Your language has been set as default."
 msgstr ""
 
-#: ../confbot.py:529
+#: ../confbot.py:562
 msgid "Available languages: %s"
 msgstr ""
 
-#: ../confbot.py:539
+#: ../confbot.py:566
+msgid "Restarting ..."
+msgstr ""
+
+#: ../confbot.py:578
+msgid "Status has been set as: %s"
+msgstr ""
+
+#: ../confbot.py:580
+msgid "Status is: %s"
+msgstr ""
+
+#: ../confbot.py:603
 msgid "%s is being a moron trying to flood the channel"
 msgstr ""
 
-#: ../confbot.py:553
+#: ../confbot.py:617
 msgid ""
 "Warning: You are marked as \"busy\" in your client,\n"
 "you will not see other people talk,\n"
 "set yourself \"available\" in your client to see their replies."
 msgstr ""
 
-#: ../confbot.py:565
+#: ../confbot.py:634
 msgid "You are banned"
 msgstr ""
 
-#: ../confbot.py:569
+#: ../confbot.py:638
 msgid "This is a private conference bot"
 msgstr ""
 
-#: ../confbot.py:575
+#: ../confbot.py:644
 msgid "<%s> joins this room."
 msgstr ""
 
-#: ../confbot.py:582
+#: ../confbot.py:653
 msgid ""
 "Topic: %(topic)s\n"
 "%(lastlog)s"
 msgstr ""
 
-#: ../confbot.py:587
+#: ../confbot.py:658
 msgid "joining"
 msgstr ""
 
-#: ../confbot.py:587 ../confbot.py:597
+#: ../confbot.py:658 ../confbot.py:667
 msgid "here"
 msgstr ""
 
-#: ../confbot.py:593
+#: ../confbot.py:663
 msgid "<%s> has left"
 msgstr ""
 
-#: ../confbot.py:599 ../confbot.py:601 ../confbot.py:603 ../confbot.py:605
-#: ../confbot.py:609
+#: ../confbot.py:669 ../confbot.py:671 ../confbot.py:673 ../confbot.py:675
+#: ../confbot.py:680
 msgid "away"
 msgstr ""
 
-#: ../confbot.py:623
+#: ../confbot.py:703
 msgid "Feature not implemented"
 msgstr ""
 
-#: ../confbot.py:662
+#: ../confbot.py:739
+msgid "Ready"
+msgstr ""
+
+#: ../confbot.py:743
 msgid "cries"
 msgstr ""
 
-#: ../confbot.py:663
+#: ../confbot.py:744
 msgid "jumps"
 msgstr ""
 
-#: ../confbot.py:664
+#: ../confbot.py:745
 msgid "hops"
 msgstr ""
 
-#: ../confbot.py:665
+#: ../confbot.py:746
 msgid "sighs"
 msgstr ""
 
-#: ../confbot.py:666
+#: ../confbot.py:747
 msgid "farts"
 msgstr ""
 
-#: ../confbot.py:667
+#: ../confbot.py:748
 msgid "smiles"
 msgstr ""
 
-#: ../confbot.py:668
+#: ../confbot.py:749
 msgid "keels over and dies"
 msgstr ""
 
-#: ../confbot.py:669
+#: ../confbot.py:750
 msgid "claps"
 msgstr ""
 
-#: ../confbot.py:672
+#: ../confbot.py:753
 msgid "What is the account name of your bot:"
 msgstr ""
 
-#: ../confbot.py:673
+#: ../confbot.py:754
 msgid "What is the password of your bot:"
 msgstr ""
 
-#: ../confbot.py:674
+#: ../confbot.py:755
 msgid "Write a short description about your bot:"
 msgstr ""
 
-#: ../confbot.py:699
+#: ../confbot.py:780
 msgid "Input super admin email account:"
+msgstr ""
+
+#: ../confbot.py:835
+msgid "Channel is started."
 msgstr ""
 
