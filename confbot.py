@@ -60,7 +60,7 @@ import os.path
 import i18n
 import locale
 
-version = '1.9'
+version = '1.8'
 revision = '$Revision$'
 commandchrs = '/)'
 
