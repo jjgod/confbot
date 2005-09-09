@@ -60,7 +60,7 @@ import os.path
 import i18n
 import locale
 
-version = '1.8'
+version = '1.9'
 revision = '$Revision$'
 commandchrs = '/)'
 
@@ -193,6 +193,7 @@ def adduser(jid):	return add_userflag(jid,"user")
 def sendtoone(who, msg):
 	if i18n.isobj(msg):
 		msg.setlang(get_userlang(getjid(who)))
+		msg = msg.getvalue()
 	m = jabber.Message(who, msg)
 	m.setType('chat')
 	con.send(m)

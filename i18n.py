@@ -19,7 +19,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-#   $Id: i18n.py 10 2005-09-09 04:00:08Z limodou $
+#   $Id: i18n.py 14 2005-09-09 05:16:34Z limodou $
 
 import gettext
 import glob
@@ -170,9 +170,8 @@ if __name__ == '__main__':
     #a = _('Success') + 'c' + _('%s is %s').para('1', '2') + 'aaa'
     a = _('You %s %s').para('1', '2')
     print a
-#    print a
-#    a.setlang('en')
-#    print a
-#    a.clear()
-#    print a
-#    
+    print _('''Topic: %(topic)s
+%(lastlog)s''').para({
+			"topic" : 'topic',
+			"lastlog" : "\n".join(['a']),
+			})  + '\n---------------------------'
