@@ -62,7 +62,7 @@ An example of usage for a simple client would be ( only psuedo code !)
 
 """
 
-# $Id: jabber.py,v 1.22 2002/01/17 12:05:40 mallum Exp $
+# $Id: jabber.py 22 2005-09-11 06:58:03Z limodou $
 
 import xmlstream
 import sha, time
@@ -727,6 +727,10 @@ class Protocol:
 
     __repr__ = __str__
 
+    def setNode(self, node):
+        self._node.insertNode(node)
+
+
 
 class Message(Protocol):
     """Builds on the Protocol class to provide an interface for sending
@@ -776,6 +780,10 @@ class Message(Protocol):
             body.putData(val)
         else:
             body = self._node.insertTag('body').putData(val)
+        active = self._node.getTag('active')
+        if not active:
+            active = self._node.insertTag('active')
+            active.putAttr('xmlns', "http://jabber.org/protocol/chatstates")
             
     def setSubject(self,val):
         "Sets the message subject text."
@@ -869,7 +877,7 @@ class Presence(Protocol):
             pri.putData(val)
         else:
             self._node.insertTag('priority').putData(val)
-
+            
 
 class Iq(Protocol): 
     """Class for creating and managing jabber <iq> protocol

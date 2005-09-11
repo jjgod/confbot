@@ -1,1 +1,1 @@
-python pygettext.py -o ../locale/messages.pot ../confbot.py
+python pygettext.py -D -o ../locale/messages.pot ../confbot.py

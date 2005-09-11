@@ -19,7 +19,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-#   $Id: i18n.py 14 2005-09-09 05:16:34Z limodou $
+#   $Id: i18n.py 19 2005-09-10 15:37:08Z limodou $
 
 import gettext
 import glob
@@ -65,8 +65,8 @@ class BasicTR(object):
         BasicTR.defaultlang = defaultlang
     init = staticmethod(init)
     
-    def __init__(self, msg):
-        self.lang = None
+    def __init__(self, msg, lang=None):
+        self.lang = lang
         self.func = None
         self.msg = None
         self.args = None
@@ -170,8 +170,8 @@ if __name__ == '__main__':
     #a = _('Success') + 'c' + _('%s is %s').para('1', '2') + 'aaa'
     a = _('You %s %s').para('1', '2')
     print a
-    print _('''Topic: %(topic)s
+    print Unicode(_('''Topic: %(topic)s
 %(lastlog)s''').para({
 			"topic" : 'topic',
 			"lastlog" : "\n".join(['a']),
-			})  + '\n---------------------------'
+			}) + '\n---------------\n', 'gbk').encode('gbk')
