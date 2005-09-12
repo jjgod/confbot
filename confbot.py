@@ -50,7 +50,6 @@
 #      * Change some command according to IRC: status->whois, nochat->away
 #      * Change away command just like irc, if has a msg, add 'away' flag to user, if no msg, remove 'away' flag
 #      * Add mode command to set some option, just like skip system prompt /mode +s On /mode -s Off
-#      * Auto send present to online people
 #      * Redesign the process of /help command, make cmd_x function docstring in help infomation
 #      * Add auto reconnect mechanism as network delay is too long
 #############################################################################################
@@ -69,7 +68,7 @@ import i18n
 import locale
 import threading
 
-version = '1.9a'
+version = '1.9'
 revision = '$Revision$'
 commandchrs = '/)'
 
