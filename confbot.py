@@ -417,6 +417,16 @@ def cmd_msg(who, msg):
 def acmd_boot(who, msg):
 	'"/boot" The same as /kick'
 	acmd_kick(who, msg)
+
+def acmd_refresh(who, msg):
+	'"/refresh" Update the conference bot website'
+	if not running:
+		t = threading.Thread(target=register_site)
+		t.setDaemon(True)
+		t.start()
+		systoone(who, _('Refreshing the website'))
+	else:
+		systoone(who, _('Refresh already in progress'))
 	
 def acmd_kick(who, msg):
 	'"/kick nick" Kick someone out of this room'
@@ -993,10 +1003,19 @@ def register_site():
 	
 	general = conf.general
 	print '>>> Registing site'
+	roster=con.getRoster()
+	print ">>> Online users:",[i 
+			for i in roster.getJIDs() 
+			if roster.getOnline(unicode(i)) in ['available','chat','online',None]
+			]
 	args={
 		'action':'register',
 		'account':"%s@%s" % (general['account'], general['server']),
 		'users':len(con.getRoster().getJIDs()),
+		'alive_users':len([i 
+			for i in roster.getJIDs() 
+			if roster.getOnline(unicode(i)) in ['available','chat','online',None]
+			]),
 		'last_activity':time.time()-last_activity,
 		'admin':' '.join(
 			[ k 
