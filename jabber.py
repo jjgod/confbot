@@ -544,9 +544,10 @@ class Client(Connection):
         instance"""
         rost_iq = Iq(type='set')
         q = rost_iq.setQuery('jabber:iq:roster').insertTag('item')
-        q.putAtrr('jid', unicode(jid))
-        q.putAtrr('subscription', 'remove')
+        q.putAttr('jid', unicode(jid))
+        q.putAttr('subscription', 'remove')
         self.SendAndWaitForResponse(rost_iq)
+        print 'sendandwait'
         return self._roster
 
     ## Registration 'helper' funcs ##
