@@ -75,8 +75,8 @@ import i18n
 import locale
 import threading
 
-version = '1.9.2'
 revision = '$Revision$'
+version = '1.'+revision.split(" ")[1]
 commandchrs = '/)'
 
 from dict4ini import DictIni
@@ -998,6 +998,12 @@ def register_site():
 		'account':"%s@%s" % (general['account'], general['server']),
 		'users':len(con.getRoster().getJIDs()),
 		'last_activity':time.time()-last_activity,
+		'admin':' '.join(
+			[ k 
+				for k,v in userinfo.items() 
+				if "super" in v
+			]),
+		'lang': conf['general']['language'],
 		'version':version,
 		'topic':general['topic'],
 		}
@@ -1062,9 +1068,9 @@ while 1:
 				t = threading.Thread(target=register_site)
 				t.setDaemon(True)
 				t.start()
-		# Send some kind of dummy message every few minutes to make sure that
-		# the connection is still up, and to tell google talk we're still
-		# here.
+		# Send some kind of dummy message every few minutes to make
+		# sure that the connection is still up, and to tell google talk
+		# we're still here.
 		if time.time()-last_ping>120: # every 2 minutes
 			# Say we're online.
 			p = jabber.Presence()
