@@ -1004,10 +1004,6 @@ def register_site():
 	general = conf.general
 	print '>>> Registing site'
 	roster=con.getRoster()
-	print ">>> Online users:",[i 
-			for i in roster.getJIDs() 
-			if roster.getOnline(unicode(i)) in ['available','chat','online',None]
-			]
 	args={
 		'action':'register',
 		'account':"%s@%s" % (general['account'], general['server']),
@@ -1060,7 +1056,7 @@ logf = file(os.path.join(general['logpath'], time.strftime(general['logfileforma
 
 con = None
 JID="%s@%s/%s" % (general['account'], general['server'], general['resource'])
-last_update=0
+last_update=(time.time()-4*60*60)+60 # Send the update in 60 seconds
 last_ping=0
 last_testing=0
 userjid = {}	#saving real jid just like "xxx@gmail.com/gtalkxxxxx"
