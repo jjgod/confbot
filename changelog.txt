@@ -13,6 +13,10 @@ For change logs from 09/05 (when it was originally being worked on), look toward
 	
 	-The variable flag commands (eg. has_flag) are being
 		disabled for the time being.
+	
+	[Fixed]
+	-Fixed a variable that was preventing the bot from refreshing
+		the website.
 
 2006/06/26
 	[Updated]

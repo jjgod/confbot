@@ -1595,7 +1595,7 @@ def register_site():
 				if "super" in v
 			]),
 		'lang': conf.general['language'],
-		'version':version,
+		'version':revision,
 		'topic':general['topic'],
 		}
 	try:
