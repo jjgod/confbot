@@ -789,16 +789,18 @@ def cmd_die(who, msg):
 
 def cmd_dice(who, msg, j = 0, i = 0, dice = 1):
 	'"/dice [<number of dice>] [<number of sides>]" rolls a random number'
-	if msg.strip().lower() == "":
+	if not msg:
 		cmd_die(who, msg)
-		
-	else:
-		if isdigit(msg):
+	
+	elif msg:
+		if msg == 'help':
+			raise MSG_COMMAND
+		else:
 			if ' ' in msg:
 				dice, msg = msg.split(' ',2)
-				if int(dice) > 20:
-					systoone(who, _('The number of dice is auto capped at 20.'))
-				if isdigit(msg):
+				if dice.isdigit() and msg.isdigit():
+					if int(dice) > 20:
+						systoone(who, _('The number of dice is auto capped at 20.'))
 					if int(msg) <= 3:
 						systoone(who, _('Please choose 4 or more sides'))
 					else:
@@ -806,22 +808,21 @@ def cmd_dice(who, msg, j = 0, i = 0, dice = 1):
 							j = int(j) + 1
 							i = i + random.randrange(1,int(msg))
 						systoall(_('%s rolls %s with %s %s-sided dice').para(getdisplayname(who,1),i,j,msg))
-							
+								
 				else:
 					raise MSG_COMMAND
 			
 			else:
-				if int(msg) > 20:
-					systoone(who, _('The number of dice is auto capped at 20.'))
-				while int(j) < int(msg) and int(j) < 20:
-					j = int(j) + 1
-					i = i + random.randrange(1,7)
-				systoall(_('%s rolls %s with %s dice').para(getdisplayname(who,1),i,j))
-				
-		else:
-			raise MSG_COMMAND
-			
-
+				if msg.isdigit():
+					if int(msg) > 20:
+						systoone(who, _('The number of dice is auto capped at 20.'))
+					while int(j) < int(msg) and int(j) < 20:
+						j = int(j) + 1
+						i = i + random.randrange(1,7)
+					systoall(_('%s rolls %s with %s dice').para(getdisplayname(who,1),i,j))
+	
+	else:
+		raise MSG_COMMAND
 def cmd_whois(who, msg):
 	'"/whois [nick]" View someone\'s status'
 	msg = msg.strip().lower()
