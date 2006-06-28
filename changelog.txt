@@ -1,0 +1,172 @@
+NOTICE: Remember that this is the Trunk version (No, there is no Stable, yet) so there are bound to be some bugs. If you find any please email hawk.mckain (at) gmail (dot) com with the details about the bug.
+
+For change logs from 09/05 (when it was originally being worked on), look towards the end of the file.
+
+2006/06/27
+	[Updated]
+	-The version is now based directly off the SVN revision.
+	
+	-Updated the seqence converter to accept []s in the 
+		wordfilters.
+	
+	-/filter will only list the words currently filtered.
+	
+	-The variable flag commands (eg. has_flag) are being
+		disabled for the time being.
+
+2006/06/26
+	[Updated]
+	-Rewrote /qna so it's clearer to the users in the room
+		what exactly it is and it's easier to add new 
+		categories of questions. 
+		
+		If you want to disable a category, under [QnA] change
+			the 1 to a 0.
+		
+	-Removed the alerts for user's status changes for now.
+		I'm having trouble adding a command to block those.
+		
+	-Transfered the changelog from inside confbot.py to here
+		at the end of the file.
+	
+	[Fixed]
+	-Fixed a typo in /nick that caused errors if a user tried
+		to take a tempnick.
+			
+	-Fixed the log filepath so it'll make the dir if it doesn't
+		previously exist and alert the user it has.
+
+	[Misc]
+	-The variable flag commands (eg. has_flag) is currently
+		not working properly. Please don't use it just yet.
+	
+2006/06/16
+	[Added]
+	-The system will now display when a user logs on, 
+		goes idle/busy, or goes offline.
+		
+		Note: Will add an option for users to disable
+			this if they find it annoying.
+			
+		Wish: Allow a user to show when a certain other
+			user logs on.
+
+2006/06/13
+	[Updated]
+	-Users can use a nickname inplace of a JID in 
+		commands like /msg and /whoid. 
+	
+	-Users can now type /nick list to see a list of
+		nicknames currently used by someone and who's
+		using it.
+		
+		Also /nick list online will display only the
+		nicks of online users.
+	
+	-By default logs now save in ../logs.
+
+2006/06/12
+	[Added]
+	-Added a set of flag commands that allow can edit
+		flags from anywhere in any DictIni.
+		
+		By default a = conf and b = general.
+
+	[Updated]
+	-You can now chnage what the langauge filter masks
+		words with in confbot.ini under "filtermask".
+		
+	-/nick now stores regestered and temporarty nicks
+		in lowercase so they can be compared in 'getjid'.
+		
+	-Updated 'getjid' to return a JID if a user types in 
+		a nickname.
+		
+	-Renamed confbot.ini to config.ini for clarity.
+
+2006/06/11
+	[Added]
+	-Function convert_seq to convert .ini keys into 
+		spaced strings.
+	-/wordfilter to add and delete filtered words.
+		To add a word like fuck where you want to filter
+		both fuck and fuk add an asterisk (*) after the
+		c so it would look like this: fuc*k.
+	
+	[Updated] 
+	-Made some improvements to the language filter
+		-It now reads from confbot.ini.
+		-It will automatically filter spaced words.
+			(eg. f u c k)
+		-Minor optimazations.
+	-Made some improvements to Questions and Answers
+		-/qna now reads from Games.ini.
+		-When adding a new category besure to open
+			confbot.py and search for "QnA Categories"
+			then add ', QnA.get("<category>")' to
+			the end of both "qu" and "an".
+			
+			Make sure you put the Questions in "qu" 
+			and Answers in "an".
+		
+	[Fixed]
+	-/qna now properly stops listening for answers
+		after someone wins.
+	
+2006/06/10
+	*Added a limited Admin Nick command to unregester 
+		nicknames.
+	*Mades a crude Questions and Answers game.
+		type /qna to ask the room a question and the
+		first person to answer correctly gets 1 point.
+
+2006/06/08
+	* Made a few changes to /nick, added maxnicklen
+		to confbot.ini which limits the number of
+		characters in a nick.
+	- Also added a language filter to the nick system.
+
+
+All changed made past this point are by Limodou
+  Update 2005/09/05:
+    * Multilanguage support
+    * Add debug flag
+    * Add logpath option
+    * Add language option
+    * Add emotes option
+    * Add Chinese translation po file
+    * Add sysprompt option and add systoone systoall function
+    * Add super admin flag
+  Update 2005/09/06
+    * Add 'nochat' flag
+    * Add /chat /nochat /status /version command
+  Update 2005/09/07
+    * Add listemotes command
+    * Add addemote <action> <representation> command
+    * Add setoption <option> value command you can control private, hide_status, debug, topic, sysprompt
+    * Add listoptions
+    * Add delemote <emote> command
+    * Add lang <language> command to switch native lanauge for one user
+    * Add switch multilang functionality on the fly
+    * Add logfileformat option, so you can put one day log into one file
+    * Add listlangs command shows available translation languages, en is default
+  Update 2005/09/08
+    * Add restart command
+    * logfile can be create new file as day past by
+    * Remove listadmins and listbans command, because /names is ok
+    * Add status command, so you can set bot's status
+    * Fix bugs
+  Update 2005/09/09
+    * Change restart to reconnect, it's more clearly
+    * Change some command according to IRC: status->whois, nochat->away
+    * Change away command just like irc, if has a msg, add 'away' flag to user, if no msg, remove 'away' flag
+    * Add mode command to set some option, just like skip system prompt /mode +s On /mode -s Off
+    * Redesign the process of /help command, make cmd_x function docstring in help infomation
+    * Add auto reconnect mechanism as network delay is too long
+  Update 2005/09/12
+    * Change Config4Obj to dict4ini
+    * Add the bot start time in logfile
+    * Auto send bot status per 2 minitues
+  Update 2005/09/15
+    * Resume the /nochat and /chat command for convenience
+    * If someone has set his flag 'away', but as he send a message to bot, the 'away' flag will be auto removed
