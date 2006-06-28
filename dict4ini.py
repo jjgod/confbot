@@ -342,7 +342,7 @@ if __name__ == '__main__':
 #
 #    t.setfilename('test1.ini')
 #    t.save()
-    t = DictIni(inifile='confbot.ini')
+    t = DictIni(inifile='config.ini')
     print t
     t.setfilename('test2.ini')
     t.save()
