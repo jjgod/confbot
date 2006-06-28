@@ -7,6 +7,7 @@
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 # 
+#
 # This program is distributed in the hope that it will be useful,
 #      but WITHOUT ANY WARRANTY; without even the implied warranty of
 #      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -16,50 +17,7 @@
 #      along with this program; if not, write to the Free Software
 #      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# Limodou
-#    Update 2005/09/05:
-#      * Multilanguage support
-#      * Add debug flag
-#      * Add logpath option
-#      * Add language option
-#      * Add emotes option
-#      * Add Chinese translation po file
-#      * Add sysprompt option and add systoone systoall function
-#      * Add super admin flag
-#    Update 2005/09/06
-#      * Add 'nochat' flag
-#      * Add /chat /nochat /status /version command
-#    Update 2005/09/07
-#      * Add listemotes command
-#      * Add addemote <action> <representation> command
-#      * Add setoption <option> value command you can control private, hide_status, debug, topic, sysprompt
-#      * Add listoptions
-#      * Add delemote <emote> command
-#      * Add lang <language> command to switch native lanauge for one user
-#      * Add switch multilang functionality on the fly
-#      * Add logfileformat option, so you can put one day log into one file
-#      * Add listlangs command shows available translation languages, en is default
-#    Update 2005/09/08
-#      * Add restart command
-#      * logfile can be create new file as day past by
-#      * Remove listadmins and listbans command, because /names is ok
-#      * Add status command, so you can set bot's status
-#      * Fix bugs
-#    Update 2005/09/09
-#      * Change restart to reconnect, it's more clearly
-#      * Change some command according to IRC: status->whois, nochat->away
-#      * Change away command just like irc, if has a msg, add 'away' flag to user, if no msg, remove 'away' flag
-#      * Add mode command to set some option, just like skip system prompt /mode +s On /mode -s Off
-#      * Redesign the process of /help command, make cmd_x function docstring in help infomation
-#      * Add auto reconnect mechanism as network delay is too long
-#    Update 2005/09/12
-#      * Change Config4Obj to dict4ini
-#      * Add the bot start time in logfile
-#      * Auto send bot status per 2 minitues
-#    Update 2005/09/15
-#      * Resume the /nochat and /chat command for convenience
-#      * If someone has set his flag 'away', but as he send a message to bot, the 'away' flag will be auto removed
-#############################################################################################
+##############################################################################
 
 #i18n process
 import sys
@@ -74,18 +32,20 @@ import os.path
 import i18n
 import locale
 import threading
+import re
 
-revision = '$Revision$'
-version = '1.'+revision.split(" ")[1]
 commandchrs = '/)'
 
 from dict4ini import DictIni
 
 def getlocale():
+	uset = DictIni("usettings.ini")
+	games = DictIni("Games.ini")
+	nick = DictIni("nicklist.ini")
 	if len(sys.argv)>1:
 		conf = DictIni(sys.argv[1])
 	else:
-		conf = DictIni("confbot.ini")
+		conf = DictIni("config.ini")
 	try:
 		loc = conf.general['language']
 	except:
@@ -98,8 +58,13 @@ def getlocale():
 
 i18n.install('confbot', 'locale', getlocale())
 
+statcheck = 0
+
 conf = None	#global config object
 userinfo = None
+nick = None
+games = None
+qu = an = ra = None
 welcome = _("""Welcome to ConferenceBot %(version)s
 By Isomer (Perry Lorier) and Limodou
 This conference bot is set up to allow groups of people to chat.
@@ -112,12 +77,32 @@ last_activity=time.time()
 lastlog = []
 
 class ADMIN_COMMAND(Exception):pass
+class TOOLOW_COMMAND(Exception):pass
 class MSG_COMMAND(Exception):pass
 class NOMAN_COMMAND(Exception):pass
 class RECONNECT_COMMAND(Exception):pass
 
-def getdisplayname(x):
-	"Changes a user@domain/resource to a displayable nick (user)"
+
+#==================================================
+#=         String Tools                           =
+#==================================================
+def getdisplayname(x, y = None):
+	"Converts a user@domain/resource to a displayable nick"
+	server = conf.general['server']
+	x=unicode(x)
+	if '/' in x:
+		x = x[:x.find("/")]
+	if hasnick(x):
+		x = nick.nickname[x]
+		x = x.capitalize()
+		if issuper(getjid(x)):
+			x = '_'+ x +'_'
+	if '@' in x and x[x.find('@'):] == "@" + server:
+		x = x[:x.find("@")]
+	return x
+
+def getcleanname(x):
+	"Converts a user@domain/resource to simply a user name."
 	server = conf.general['server']
 	x=unicode(x)
 	if '/' in x:
@@ -129,17 +114,100 @@ def getdisplayname(x):
 def getjid(x):
 	"returns a full jid from a display name"
 	server = conf.general['server']
-	x = getdisplayname(x)
-	if '@' not in x:
-		x = x + "@" + server
-	return x
+	if x in nick.nickreg.keys():
+		x = nick.nickreg.get(x)
+		return x
+	if x in nick.tempnick.keys():
+		x = nick.tempnick.get(x)
+		return x
+	else:
+		x = getcleanname(x)
+		if '@' not in x:
+			x = x + "@" + server
+		return x
 
-def has_userflag(jid,flag):
+def cuss_list(msg):
+	"Returns a formated Regex"
+	#print conf.general.get("wordfilter")
+	j = convert_seq(conf.general.get("wordfilter"), y = 1)
+	#print j
+	j = j.strip()
+	#print j
+	j = re.sub('\s','|',j)
+	#print j
+	j = '(?i)(' + j + ')+'
+	return j
+	
+def convert_seq(seq, y = None):
+#When y = 1 it sets the string up for the langauge filter.
+#When y = 2 it sets the string up to be listed in /wordfilter.
+	j = None
+	for i in seq:
+		k = i
+		if y == 1:
+			k = re.sub('\[*\B\W*\]*','\s*',k)
+			k = re.sub('\[(([^\]])\\\s\*([^\]]))+\]','[\g<2>\g<3>]',k)
+			k = re.sub('\*+','*\s*',k)
+			k = re.sub('u""','',k)		
+		elif y == 2:
+			k = re.sub('\Z\W*','\n',k)
+		if j:			
+			j = j + ' ' + k
+		else:
+			j = k
+		#print j
+	return j
+		
+		
+#==================================================
+#=         Flag Tools                             =
+#==================================================
+#def has_flag(key,flag, a = 'conf', b = 'general'):
+#	if not a[b].has_key(key):
+#		return 0 # False
+#	saveall()
+#	return flag in a[b][key]
+#	
+#def add_flag(key, flag, a = 'conf', b = 'general'):
+#	"add a flag to a key, return 0 if it already has that flag"
+#	if has_flag(key,flag, a, b):
+#			return 0
+#	if not a[b].has_key(key):
+#		a[b][key]=[flag]
+#	else:
+#		a.b[key].append(flag)
+#	saveall()
+#		
+#def del_flag(key,flag, a = 'conf', b = 'general'):
+#	"del a flag, return 0 if the key doesn't have the flag"
+#	if not has_flag(key,flag, a, b):
+#		return 0
+#	a[b][key].remove(flag)
+#	if a[b][key]==[]:
+#		del a[b][key]
+#	saveall()
+#	return 1
+
+	
+#===================================
+#=         User Flag Tools         =
+#===================================
+def has_userflag(jid, flag):
 	"return true if the user is a userflag"
 	if not userinfo.has_key(getjid(jid)):
 		return 0 # False
 	return flag in userinfo[getjid(jid)]
 
+def add_userflag(jid, flag):
+	"add an flag to a user, return 0 if they already have that flag"
+	if has_userflag(jid,flag):
+		return 0
+	if not userinfo.has_key(getjid(jid)):
+		userinfo[getjid(jid)]=[flag]
+	else:
+		userinfo[getjid(jid)].append(flag)
+	saveconfig()
+	
 def del_userflag(jid,flag):
 	"del an flag, return 0 if they didn't have the flag"
 	if not has_userflag(jid,flag):
@@ -160,29 +228,10 @@ def set_userflag(jid,flag):
 	saveconfig()
 	return 1
 
-def del_langflag(jid):
-	flags = userinfo[jid]
-	for i in flags[:]:
-		if i.startswith('*'):
-			del_userflag(jid, i)
-			break
-	saveconfig()
-
-def add_langflag(jid, flag):
-	del_langflag(jid)
-	add_userflag(jid, flag)
-	saveconfig()
-
-def add_userflag(jid,flag):
-	"add an flag to a user, return 0 if they already have that flag"
-	if has_userflag(jid,flag):
-		return 0
-	if not userinfo.has_key(getjid(jid)):
-		userinfo[getjid(jid)]=[flag]
-	else:
-		userinfo[getjid(jid)].append(flag)
-	saveconfig()
 	
+#===================================
+#=         Lang Flag Tools         =
+#===================================
 def get_userlang(jid):
 	lang = None
 	for u, flags in userinfo.items():
@@ -193,19 +242,77 @@ def get_userlang(jid):
 					break
 			break
 	return lang
+	
+def add_langflag(jid, flag):
+	del_langflag(jid)
+	add_userflag(jid, flag)
+	saveconfig()
+	
+def del_langflag(jid):
+	flags = userinfo[jid]
+	for i in flags[:]:
+		if i.startswith('*'):
+			del_userflag(jid, i)
+			break
+	saveconfig()
+	
+
+#==================================================
+#=         Misc Tools                             =
+#==================================================
+def get_svn_version():
+	if os.path.getsize(".svn/entries") != 0 and os.path.isdir(".svn"):
+		f = file(".svn/entries")
+		i = 0
+		while i < 13:
+			revision = f.readline()
+			i = i + 1
+		p = re.search('(\d+)', revision)
+		conf.general['revision'] = int(p.group(1))
+		saveconfig()
+		return conf.general['revision']
+	elif not conf.general['revision']:
+		return conf.general['revision']
+	else:
+		return 'Unknown'
+
+def check_status(jid):
+	if con.getRoster().getShow(jid) not in ['available','chat','online',None]:
+		return 1
+	return 0
+	
+def check_nick(jid):
+	if nick['nickname'].has_key(jid):
+		return 1
+	return 0
 
 def issuper(jid):	return has_userflag(jid,"super")
-def isadmin(jid):	return has_userflag(jid,"admin") or has_userflag(jid,"super")
+def issadmin(jid):	return has_userflag(jid,"admin") or has_userflag(jid,"super")
+def isadmin(jid):  	return has_userflag(jid,"admin")
 def deladmin(jid):	return del_userflag(jid,"admin")
 def addadmin(jid):	return add_userflag(jid,"admin")
 def isbanned(jid):	return has_userflag(jid,"banned")
 def delban(jid):	return del_userflag(jid,"banned")
 def addban(jid):	return set_userflag(jid,"banned")
+def ismuted(jid):  	return has_userflag(jid,"muted")
+def delmute(jid):	return del_userflag(jid,"muted")
+def addmute(jid):	return add_userflag(jid,"muted")
+def isbusy(jid):	return check_status(jid)
+def iscamo(jid):	return has_userflag(jid, "camo")
+
+def addfilter(key,flag):	return add_flag('wordfilter', flag, None, None)
+def getcuss(msg):	return cuss_list(msg)
+def iscuss(msg):	return msg.lower() in conf.general.get("wordfilter")
+def hasnick(jid):	return check_nick(jid)
 
 def isuser(jid):	return has_userflag(jid,"user")
 def deluser(jid):	return del_userflag(jid,"user")
 def adduser(jid):	return add_userflag(jid,"user")
 
+
+#==================================================
+#=         Message Functions                      =
+#==================================================
 def sendtoone(who, msg):
 	if i18n.isobj(msg):
 		msg.setlang(get_userlang(getjid(who)))
@@ -217,9 +324,10 @@ def sendtoone(who, msg):
 	if conf.general.debug > 1:
 		print '...Begin....................', who
 	con.send(m)
-#	time.sleep(.1)
+	#	time.sleep(.1)
+	
 
-def sendtoall(msg,butnot=[],including=[]):
+def sendtoall(msg,butnot=[],including=[], status = None):
 	global lastlog
 	r = con.getRoster()
 	print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode("utf-8")
@@ -230,11 +338,13 @@ def sendtoall(msg,butnot=[],including=[]):
 		except:
 			print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode('utf-8')
 	for i in r.getJIDs():
-		if getdisplayname(i) in butnot:
-			continue
+		#print i, uset.mutechange.get(i)
 		state=r.isOnline(i)
-		if has_userflag(getdisplayname(i), 'away'): #away is represent user don't want to chat
+		#away represents users that don't want to chat
+		if getdisplayname(i) in butnot or has_userflag(getdisplayname(i), 'away'): 
 			continue
+		#if status == 1 and uset.mutechange[i] == 1:
+		#	continue
 		if r.isOnline(i) and r.getShow(i) in ['available','chat','online',None]:
 			sendtoone(i, msg)
 	if not msg.startswith(conf.general['sysprompt']):
@@ -253,7 +363,7 @@ def sendtoadmin(msg,butnot=[],including=[]):
 		except:
 			print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode('utf-8')
 	for i in r.getJIDs():
-		if not isadmin(i): continue
+		if not issadmin(i): continue
 		if getdisplayname(i) in butnot:
 			continue
 		state=r.getShow(unicode(i))
@@ -267,12 +377,15 @@ def sendtoadmin(msg,butnot=[],including=[]):
 	if len(lastlog)>5:
 		lastlog=lastlog[1:]
 
-def systoall(msg, butnot=[], including=[]):
+#================================
+#=         Sys Messages         =
+#================================
+def systoall(msg, butnot=[], including=[], status = None):
 	user = butnot[:]
 	for i in userinfo.keys():
 		if has_userflag(i, 's'):
 			user.append(i)
-	sendtoall(conf.general['sysprompt'] + ' ' + msg, user, including)
+	sendtoall(conf.general['sysprompt'] + ' ' + msg, user, including, status)
 	
 def systoone(who, msg):
 #	if not has_userflag(getjid(who), 's'):
@@ -309,13 +422,17 @@ def boot(jid):
 		del statuses[getdisplayname(jid)]
 #	con.removeRosterItem(jid)
 
+#=====================================================
+#=         Chat Commands                             =
+#=====================================================
 def cmd(who,msg):
 	if " " in msg:
 		cmd,msg=msg.split(" ",1)
 	else:
-		cmd,msg=msg.strip(),""
+		cmd,msg=msg.strip().lower(),""
 	if cmd[:1] in commandchrs:
 		cmd=cmd[1:]
+		
 	cmd = cmd.lower()
 	func = None
 	try:
@@ -328,61 +445,268 @@ def cmd(who,msg):
 		else:
 			systoone(who, _('Unknown command "%s".').para(cmd))
 	except ADMIN_COMMAND:
-		systoone(who, _('This is admin command, you have no permision to use.'))
+		systoone(who, _('This is admin command. You are _*not*_ and admin.'))
+	except TOOLOW_COMMAND:
+		systoone(who, _('You cannot use this command against a Super Admin.'))
 	except MSG_COMMAND:
 		f = _
 		systoone(who, f(func.__doc__))
 	except NOMAN_COMMAND:
 		systoone(who, _('There is no this person'))
 
-def cmd_me(who, msg):
-	'"/me <emote> [<msg>]" Says an emote as you'
-	if msg.strip()=="":
-		action=random.choice(conf['emotes'].keys())
-		systoone(who, _('Usage: /me <emote>\nSays an emote as you.  eg "/me %(action)s <msg>" shows as "%(nick)s %(emote)s <msg>" to everyone else').para({
-			"nick" : getdisplayname(who),
-			"action" : action,
-			"emote" : conf['emotes'][action]
-			}))
+#=====================================================
+#=         User Commands                             =
+#=====================================================
+#=================================
+#=         Self Commands         =
+#=================================
+def cmd_nick(who, msg):
+	'Type /nick help for more information.'
+	if issadmin(who.getStripped()):
+		msg = msg.strip().lower()
 	else:
-		if " " in msg:
-			action, msg = msg.split(" ", 1)
-		else:
-			action, msg = msg, " "
-		emote = conf['emotes'].get(action, "")
-		if emote:
-			emote = "_%s_" % emote
-		sendtoall(_('<%s> %s %s').para(getdisplayname(who),emote,msg), butnot=[getdisplayname(who)])
-		systoone(who, _('You %s %s').para(emote, msg))
+		msg = msg.strip('_*').lower() #Limits the abuse of capitals and makes it harder to steal names.
+	nickname = wid = who.getStripped()
+	nickconf = nick['nickname']
+	nicknow = None
+	if nick['nickname'].get(getjid(who)):
+		nicknow = nick['nickname'].get(getjid(who)).lower()
 	
+	#==================
+	#= Check for commands that have an optional secondary command first.
+	if 'list' in msg:
+		if ' ' in msg:
+			cmd, msg = msg.split(' ', 1)
+			if msg == 'online':
+				r = con.getRoster()
+				names = []
+				for i in nick.nickname.keys():
+					state = r.getOnline(unicode(i))
+					name = getdisplayname(i)
+					if state in ['available','chat','online',None] or isbusy(i):
+						names.append('%s  :  %s\n' % (name, i))
+				systoone(who, _('Names: total (%d)\n%s').para(len(names), " ".join(names)))
+		elif ' ' not in msg or msg != 'online':
+			names = []
+			for i in nick.nickname.keys():
+				name = getdisplayname(i)
+				names.append('%s  :  %s\n' % (name, i))
+			systoone(who, _('Names: total (%d)\n%s').para(len(names), " ".join(names)))
+	
+	#==================
+	#= Check if the user wants to do something with the nick.
+	elif ' ' in msg:
+		name, msg = msg.split(' ', 1)
+		namecap = name.capitalize()
+		if iscuss(name):
+			systoone(who, _('Please do not use any kind of foul langauge in your name.'))
+		elif len(name) > conf.general['maxnicklen']:
+			systoone(who, _('Please use a nick shorter than %d. Thank you.').para(conf.general['maxnicklen']))
+		elif msg in ('register', 'reg'):
+			if name in nick.nickreg.keys():
+				systoone(who, _('The nick %s has already been regestered to %s.').para(namecap,nick.nickreg[name]))
+			else:
+				if nicknow != None:
+					del nick.tempnick[nicknow]
+				del nick.tempnick[name]
+				nick.nickreg[name] = wid
+				nick.nickname[nickname] = namecap
+				systoone(who, _('The nick %s has now been regestered to your email address.').para(namecap))
+		elif msg in ('unreg', 'unregister'):
+			if wid != nick.nickreg[name]:
+				systoone(who, _('How _*dare*_ you try to steal the nick %s from %s?!').para(namecap,nick.nickreg[name]))
+			else:
+				del nick.nickreg[name]
+				del nickconf[wid]
+				systoone(who, _('Anyone can now use the nick %s.').para(namecap))
+		else:
+			systoone(who, _('Please check what you typed is:\n1. a name with no spaces in it\n2. a valid command\n if it is both of these please report the but to an admin.'))
+	
+	elif msg == 'help':
+		systoone(who, _('Useage: "/nick <nickname> [<command>]"\nCommands:\nlist [online] - Displays a list of nicknames and the emails of the user.\nreg(ister) - Regesters the nickname to your email\nunreg(ister) - Unregisters the nickname from your email'))
+	
+	#===================
+	#= Set the users nick as msg.
+	elif msg:
+		msgcap = msg.capitalize()
+		if iscuss(msg):
+			systoone(who, _('Please do not use any kind of foul langauge in your name.'))
+		elif len(msg) > conf.general['maxnicklen']:
+			systoone(who, _('Please use a shorter name. Thank you.'))
+		elif msg in nick.nickreg.keys() and wid != nick.nickreg[msg]:
+			systoone(who, _('The nick _%s_ has already been regestered to %s.').para(msg,nick.nickreg[msg]))
+		elif msg in nick.tempnick.keys() and wid != nick.tempnick[msg]:
+			systoone(who, _('The nick _%s_ is already being used by %s.').para(msgcap,nick.tempnick[msg]))		
+		else:
+			systoone(who, _('You will now send messages as <%s>').para(msgcap))
+			del nick.tempnick[nicknow]
+			if msg not in nick.tempnick.keys() and msg not in nick.nickreg.keys():
+				nick.tempnick[msg] = wid	
+			nick.nickname[nickname] = msgcap
+			
+	#===================
+	#= If the user has a nick remove it else display MSG_COMMAND.
+	else:
+		if hasnick(wid):
+			nickconf = nick['nickname']
+			del nickconf[wid]
+			systoone(who, _('You will now send messages as <%s>').para(getdisplayname(who)))
+			saveconfig()
+		else:
+			raise MSG_COMMAND
+	savenicklist()
+
+
+def cmd_me(who, msg):
+	'"/me <msg>" Says an emote as you'
+	if msg == "":
+		raise MSG_COMMAND
+	else:
+		sendtoall(_('**%s %s**').para(getdisplayname(who),msg))
+		
+def cmd_smite(who, msg):
+	'"/smite" smites someone. Syntax: /smite person'
+	if msg.strip().lower() == "":
+		systoone(who, _('It works like /smite person'))
+	else:
+		smitee = msg.title()
+	if smitee == "Chuck Norris":
+		systoall(_('Chuck Norris resents the smite attempt and roundhouse kicks %s in the face').para(getdisplayname(who)))
+	else:
+		systoall(_('%s smites %s').para(getdisplayname(who),smitee))
+		
 def cmd_help(who, msg):
 	'"/help" Show this help message'
-	jid = who.getStripped()
-	f = _
-	systoone(who, _('Commands: \n%s').para(' /' + ' /'.join(["%-20s%s\n" % (x, unicode(f(y.__doc__, get_userlang(jid))) or "") for x, y in commands.items()])))
-	if isadmin(who.getStripped()):
-		systoone(who, _('Admin commands: \n%s').para(' /' + ' /'.join(["%-20s%s\n" % (x, unicode(f(y.__doc__, get_userlang(jid))) or "") for x, y in acommands.items()])))
-	systoone(who, _('See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\nAlso see http://www.donews.net/limodou for Chinese version.'))
+	if msg == 'nick':
+		systoone(who, _('Useage: "/nick <nickname> [<command>]"\nCommands:\nreg(ister) - Regesters the nickname to your email\nunreg(ister) - Unregisters the nickname from your email'))
+	else:
+		jid = who.getStripped()
+		f = _
+		systoone(who, _('Commands: \n%s').para(' /' + ' /'.join(["%-20s%s\n" % (x, unicode(f(y.__doc__, get_userlang(jid))) or "") for x, y in commands.items()])))
+		if issadmin(who.getStripped()):
+			systoone(who, _('Admin commands: \n%s').para(' /' + ' /'.join(["%-20s%s\n" % (x, unicode(f(y.__doc__, get_userlang(jid))) or "") for x, y in acommands.items()])))
+		systoone(who, _('See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\nAlso see http://www.donews.net/limodou for Chinese version.'))
 
+def cmd_w(who, msg):
+	cmd_names(who, msg)
+		
+def cmd_who(who, msg):
+	cmd_names(who, msg)
+		
 def cmd_names(who, msg):
 	'"/names" List all the people in the room'
 	r = con.getRoster()
-	names=[]
+	names = []
 	for i in r.getJIDs():
-		state=r.getOnline(unicode(i))
-		name=getdisplayname(i)
+		state = r.getOnline(unicode(i))
+		name = getdisplayname(i)
+		if issuper(i.getStripped()):
+			name = "@%s" % name
 		if isadmin(i.getStripped()):
-			name="@%s" % name
+			name = "%"+"%s" % name
 		if has_userflag(i.getStripped(), 'away'):
-			name="-%s" % name
+			name = "-%s" % name
 		if has_userflag(i.getStripped(), 'banned'):
-			name="#%s" % name
+			name = "#%s" % name
+		if isbusy(i.getStripped()):
+			name = "!%s" % name
 		if state in ['available','chat','online',None]:
 			names.insert(0,name)
 		else:
 			names.append('(%s)' % name)
 	systoone(who, _('Names: total (%d)\n%s').para(len(names), " ".join(names)))
+	
+def cmd_msg(who, msg):
+	'"/msg nick message" Send a private message to someone'
+	if not ' ' in msg:
+		systoone(who, _('Usage: )msg nick message'))
+	else:
+		if has_userflag(who.getStripped(), 'away'):
+			systoone(who, _('Warning: Because you set "away" flag, so you can not receive and send any message from this bot, until you reset using "/away" command')) 
+			return
+		target,msg = msg.split(' ',1)
+		if has_userflag(target, 'away'):
+			systoone(who, _('<%s> has set himself in "away" mode, so you could not send him a message.').para(getdisplayname(target))) 
+			return
+		if isbusy(target):
+			systoone(who, _('<%s> has set themselves as busy or is idle so the message has not been delivered.').para(getdisplayname(target)))
+			return
+		if not userinfo.has_key(getjid(target)):
+			raise NOMAN_COMMAND
+		sendtoone(getjid(target), _('*<%s>* %s').para(getdisplayname(who), msg))
+		systoone(who, _('>%s> %s').para(getdisplayname(target), msg))
+		
+		
+#===================================
+#=         Option Commands         =
+#===================================
+usettings = ['mutechange']
+def cmd_settings(who, msg):
+	'Type /settings help for more information.'
+	msg = msg.strip().lower()
+	jid = getjid(who.getStripped())
+	if msg:
+		if ' ' in msg:
+			setting, msg = msg.split(' ', 1)
+		else:
+			setting = msg
+		#print setting, msg
+		if setting in usettings:
+			if msg:
+				#set, msg = msg.split(' ', 1)
+				if setting in ('mutechange'):
+					if msg in ('1', 'yes', 'on', 'true'):
+						value = 1
+					else:
+						value = 0
+				uset[setting][jid] = value
+				saveuset()
+				readuset()
+			else:
+				value = uset[setting][jid]
+			if setting in ('mutechange'):
+				if uset[setting][jid]:
+					value = 'On'
+				else:
+					value = 'Off'
+			systoone(jid, _('%s is currently %s').para(setting ,value))
+		else:
+			systoone(jid, _('The setting you\'re trying to change doesn\'t seem to exist.'))
+	elif msg == 'help':
+		systoone(jid, _('''Useage: /settings <setting> <value>
+			Settings:
+			mutechange - Mute the announcement when a user comes online, is busy or idle, and goes offline.'''))
+	
+	else:
+		raise MSG_COMMAND
+	saveuset()
+	
+def cmd_lang(who, msg):
+	'"/lang [language]" Set language to "language" or reset to default'
+	msg = msg.strip().lower()
+	if msg:
+		add_langflag(who.getStripped(), '*%s' % msg)
+		systoone(who, _('Your language has been set as "%s".').para(msg))
+	else:
+		del_langflag(who.getStripped())
+		systoone(who, _('Your language has been set as default.'))
+		
+def cmd_listlangs(who, msg):
+	'"/listlangs" List all support language'
+	systoone(who, _('Available languages: %s').para(' '.join(i18n.listlang())))
+	
+def cmd_vcard(who, msg):
+	'"/vcard" usage: /vcard full name**personal quote**website address. ** is the field seperator.'
+	if not msg:
+		systoone(who, _('"/vcard" usage: /vcard full name**personal quote**website address. ** is the field seperator.'))
+	else:
+		name, quote, addy = msg.split("**",3)
+		addy = re.sub("http://","",addy)
+		systoone(who, _('INFO FOR %s: \n Name: %s \n Personal Quote: "%s" \n Web Address: http://%s').para(getdisplayname(who),name,quote,addy))
 
+#===================================
+#=         Status Commands         =
+#===================================
 def cmd_leave(who, msg):
 	'"/leave" The same as /quit'
 	cmd_quit(who, msg)
@@ -395,153 +719,13 @@ def cmd_quit(who, msg):
 	'"/quit" Quit this room for ever'
 	if msg:
 		msg = "(%s)" % msg
-	systoall(_('Quit: <%s> %s').para(getdisplayname(who),msg))
+	systoall(_('Quit: <%s> %s').para(getdisplayname(who)),msg)
 	if not issuper(who):
 		boot(who.getStripped())
 
-def cmd_msg(who, msg):
-	'"/msg nick message" Send a private message to someone'
-	if not ' ' in msg:
-		systoone(who, _('Usage: )msg nick message'))
-	else:
-		if has_userflag(who.getStripped(), 'away'):
-			systoone(who, _('Warning: Because you set "away" flag, so you can not receive and send any message from this bot, until you reset using "/away" command')) 
-			return
-		target,msg = msg.split(' ',1)
-		if has_userflag(target, 'away'):
-			systoone(who, _('<%s> has set himself in "away" mode, so you could not send him a message.').para(getjid(target))) 
-			return
-		sendtoone(getjid(target), _('*<%s>* %s').para(getdisplayname(who), msg))
-		systoone(who, _('>%s> %s').para(getdisplayname(target), msg))
-
-def acmd_boot(who, msg):
-	'"/boot" The same as /kick'
-	acmd_kick(who, msg)
-
-def acmd_refresh(who, msg):
-	'"/refresh" Update the conference bot website'
-	if not running:
-		t = threading.Thread(target=register_site)
-		t.setDaemon(True)
-		t.start()
-		systoone(who, _('Refreshing the website'))
-	else:
-		systoone(who, _('Refresh already in progress'))
-	
-def acmd_kick(who, msg):
-	'"/kick nick" Kick someone out of this room'
-	if isadmin(who.getStripped()):
-		jid = getjid(msg.strip())
-		if userinfo.has_key(jid):
-			boot(jid)
-			del userinfo[jid]
-			saveconfig()
-			systoall(_('Booted: <%s>').para(msg.strip()))
-	else:
-		raise ADMIN_COMMAND
-
-def acmd_ban(who, msg):
-	'"/ban nick" Forbid someone rejoin this room'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		if msg:
-			jid = getjid(msg)
-			if userinfo.has_key(jid):
-				boot(jid)
-			addban(msg)
-			systoall(_('Banned: <%s>').para(msg))
-		else:
-			raise MSG_COMMAND
-	else:
-		raise ADMIN_COMMAND
-
-def acmd_unban(who, msg):
-	'"/unban nick" Permit someone rejoin this room'
-	msg = msg.strip()
-	jid = getjid(msg)
-	if isadmin(who.getStripped()):
-		if msg:
-			if delban(jid):
-				deluser(jid)
-				systoone(who, _('Unbanned: <%s>').para(jid))
-			else:
-				systoone(who, _('%s is not banned').para(jid))
-		else:
-			raise MSG_COMMAND
-	else:
-		raise ADMIN_COMMAND
-
-def acmd_invite(who, msg):
-	'"/invite nick" Invite someone to join this room'
-	msg = msg.strip()
-	jid = getjid(msg)
-	if isadmin(who.getStripped()):
-		if msg:
-			con.send(jabber.Presence(to=jid, type='subscribe'))
-			adduser(jid)
-			systoone(who, _('Invited <%s>').para(jid))
-		else:
-			raise MSG_COMMAND
-	else:
-		raise ADMIN_COMMAND
-	
-def acmd_addadmin(who, msg):
-	'"/addadmin nick" Set someone as administrator'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		if msg:
-			if who.getStripped() != msg:
-				addadmin(msg)
-				systoone(who, _('Added <%s>').para(getjid(msg)))
-				systoone(getjid(msg), _('<%s> added you as an admin').para(getdisplayname(who)))
-			else:
-				systoone(who, _('You are an admin already.'))
-		else:
-			raise MSG_COMMAND
-	else:
-		raise ADMIN_COMMAND
-		
-def acmd_deladmin(who, msg):
-	'"/deladmin nick" Remove admin right from someone'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		if msg:
-			if issuper(msg, 'super'):
-				systoone(who, _('<%s> is a super admin which can not be deleted.').para(getjid(msg)))
-			else:
-				if deladmin(msg):
-					systoone(who, _('Removed <%s>').para(getjid(msg)))
-					systoone(getjid(msg), _('<%s> removed you as an admin').para(getdisplayname(who)))
-				else:
-					systoone(who, _('<%s> is not an admin').para(getjid(msg)))
-		else:
-			raise MSG_COMMAND
-	else:
-		raise ADMIN_COMMAND
-		
-def acmd_die(who, msg):
-	'"/die [message]" Close the room'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		if msg:
-			systoall(_('Room shutdown by <%s> (%s)').para(who.getStripped(),msg))
-		else:
-			systoall(_('Room shutdown by <%s>').para(who.getStripped()))
-		sys.exit(1)
-	else:
-		raise ADMIN_COMMAND
-	
-def acmd_reload(who, msg):
-	'"/reload" Reload the config'
-	if isadmin(who.getStripped()):
-		readconfig()
-		systoone(who, _('Config reloaded'))
-	else:
-		raise ADMIN_COMMAND
-
 def cmd_away(who, msg):
 	'"/away [message]" Set "away"(need message) or "chat"(no message) flag of someone' 
-	msg = msg.strip()
+	msg = msg.strip().lower()
 	if msg:
 		cmd_nochat(who, msg)
 	else:
@@ -563,151 +747,10 @@ def cmd_chat(who, msg):
 		systoone(who, _('You can begin to chat now.'))
 	else:
 		systoone(who, _("You didn't set \"away\" flag."))
-
-def cmd_whois(who, msg):
-	'"/whois [nick]" View someone\'s status'
-	msg = msg.strip()
-	jid = getjid(msg)
-	if msg and isadmin(who.getStripped()):
-		if userinfo.has_key(jid):
-			status = userinfo[jid]
-			systoone(who, _('Info: %s').para(" ".join(status)))
-		else:
-			raise NOMAN_COMMAND
-	else:
-		status = userinfo[who.getStripped()]
-		systoone(who, _('Info: %s').para(" ".join(status)))
-	
-def cmd_version(who, msg):
-	'"/version" Show version of this bot'
-	systoone(who, _('Version: %s (%s)\nSee http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\nAlso see http://www.donews.net/limodou for Chinese version.').para(version, revision))
-
-def cmd_listemotes(who, msg):
-	'"/listemotes" List all emote string'
-	emotes = conf['emotes']
-	txt = []
-	for key, value in emotes.items():
-		txt.append('%s : %s' % (key, value))
-	systoone(who, _('Emotes : \n%s').para('\n'.join(txt)))
-	
-def acmd_addemote(who, msg):
-	'"/addemote action emote" Add emote string'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		if not msg or ' ' not in msg:
-			raise MSG_COMMAND
-		else:
-			action, msg = msg.split(' ', 1)
-			conf['emotes'][action] = msg
-			saveconfig()
-			systoone(who, _('Success'))
-	else:
-		raise ADMIN_COMMAND
-
-def acmd_delemote(who, msg):
-	'"/delemote action" Del emote string'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		if msg:
-			if conf['emotes'].has_key(msg):
-				emotes = conf['emotes']
-				del emotes[msg]
-				saveconfig()
-				systoone(who, _('Success'))
-			else:
-				systoone(who, _('Emote [%s] is not exist.').para(msg))
-		else:
-			raise MSG_COMMAND
-	else:
-		raise ADMIN_COMMAND
-
-options = ['language', 'private', 'hide_status', 'debug', 'topic', 'sysprompt', 'logfileformat', 'status']
-def acmd_setoption(who, msg):
-	'"/setoption option value" Set an option\'s value'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		if not msg or ' ' not in msg:
-			raise MSG_COMMAND
-		else:
-			option, msg = msg.split(' ', 1)
-			if option in options:
-				if option in ('private', 'hide_status'):
-					if msg.lower() in ("1", "yes", "on", "true"):
-						value = 1
-					else:
-						value = 0
-				if option == 'debug':
-					try:
-						value = int(msg)
-					except:
-						value = 0
-				else:
-					value = msg
-				conf.general[option] = value 
-				saveconfig()
-				systoone(who, _('Success'))
-			else:
-				systoone(who, _('Option [%s] may not exist or can not be set.').para(option))
-	else:
-		raise ADMIN_COMMAND
-
-def acmd_listoptions(who, msg):
-	'"/listoptions" List all options that can be changed'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		txt = []
-		for option in options:
-			if option in ('private', 'hide_status'):
-				if conf.general[option]:
-					value = 'On'
-				else:
-					value = 'Off'
-			else:
-				value = conf.general[option]
-			txt.append("%s : %s" % (option, value))
-		systoone(who, _('Options: \n%s').para('\n'.join(txt)))
-	else:
-		raise ADMIN_COMMAND
-	
-def cmd_lang(who, msg):
-	'"/lang [language]" Set language to "language" or reset to default'
-	msg = msg.strip()
-	if msg:
-		add_langflag(who.getStripped(), '*%s' % msg)
-		systoone(who, _('Your language has been set as "%s".').para(msg))
-	else:
-		del_langflag(who.getStripped())
-		systoone(who, _('Your language has been set as default.'))
 		
-def cmd_listlangs(who, msg):
-	'"/listlangs" List all support language'
-	systoone(who, _('Available languages: %s').para(' '.join(i18n.listlang())))
-	
-def acmd_reconnect(who, msg):
-	'"/reconnect" Reconnect the server'
-	if isadmin(who.getStripped()):
-		systoadmin(_('Reconnecting ...'))
-		raise RECONNECT_COMMAND
-	else:
-		raise ADMIN_COMMAND
-
-def cmd_status(who, msg):
-	'"/status [message]" Set or see the bot\'s status'
-	msg = msg.strip()
-	if isadmin(who.getStripped()):
-		if msg:
-			conf.general['status'] = msg
-			saveconfig()
-			sendpresence(msg)
-			systoone(who, _('Status has been set as: %s').para(msg))
-		else:
-			systoone(who, _('Status is: %s').para(conf.general['status']))
-	else:
-		raise ADMIN_COMMAND
-	
 def cmd_mode(who, msg):
 	'"/mode option" Set or remove flag to someone. For example: "+s" filter system message, "-s" receive system message'
-	msg = msg.strip()
+	msg = msg.strip().lower()
 	if msg:
 		setflag = True
 		if msg[0] == '+':	#set
@@ -726,11 +769,484 @@ def cmd_mode(who, msg):
 			return
 	systoone(who, _('Usage: /mode [+]s'))
 
+
+#=================================
+#=         Misc Commands         =
+#=================================
+def cmd_version(who, msg):
+	'"/version" Show version of this bot'
+	systoone(who, _('''Revision: %s 
+	
+	Websites:
+	English:
+	http://coders.meta.net.nz/~perry/jabber/confbot.php
+	Chinese:
+	http://www.donews.net/limodou.''').para(revision))
+	
+def cmd_die(who, msg):
+	'"/die" rolls a random number'
+	systoall(_('%s rolls a %s').para(getdisplayname(who,1),random.randrange(1,7)))
+
+def cmd_dice(who, msg, j = 0, i = 0, dice = 1):
+	'"/dice [<number of dice>] [<number of sides>]" rolls a random number'
+	if msg.strip().lower() == "":
+		cmd_die(who, msg)
+		
+	else:
+		if isdigit(msg):
+			if ' ' in msg:
+				dice, msg = msg.split(' ',2)
+				if int(dice) > 20:
+					systoone(who, _('The number of dice is auto capped at 20.'))
+				if isdigit(msg):
+					if int(msg) <= 3:
+						systoone(who, _('Please choose 4 or more sides'))
+					else:
+						while int(j) < int(dice) and int(j) < 20:
+							j = int(j) + 1
+							i = i + random.randrange(1,int(msg))
+						systoall(_('%s rolls %s with %s %s-sided dice').para(getdisplayname(who,1),i,j,msg))
+							
+				else:
+					raise MSG_COMMAND
+			
+			else:
+				if int(msg) > 20:
+					systoone(who, _('The number of dice is auto capped at 20.'))
+				while int(j) < int(msg) and int(j) < 20:
+					j = int(j) + 1
+					i = i + random.randrange(1,7)
+				systoall(_('%s rolls %s with %s dice').para(getdisplayname(who,1),i,j))
+				
+		else:
+			raise MSG_COMMAND
+			
+
+def cmd_whois(who, msg):
+	'"/whois [nick]" View someone\'s status'
+	msg = msg.strip().lower()
+	jid = getjid(msg)
+	if msg and issadmin(who.getStripped()):
+		if userinfo.has_key(jid):
+			status = userinfo[jid]
+			systoone(who, _('Info: %s').para(" ".join(status)))
+		else:
+			raise NOMAN_COMMAND
+	else:
+		status = userinfo[who.getStripped()]
+		systoone(who, _('Info: %s').para(" ".join(status)))
+	
+def cmd_getemail(who, x):
+	'"/getemail <nickname>" Returns a users email address from their nickname.'
+	if msg:
+		getjid(x)
+	else:
+		raise MSG_COMMAND
+		
+#=====================================================
+#=         Admin Commands                            =
+#=====================================================
+#=================================
+#=         User Commands         =
+#=================================
+def acmd_info(who, msg):
+	i = getjid(msg.strip().lower())
+	r = con.getRoster()
+	print "Status", r.getStatus(unicode(i))
+	print "Show", r.getShow(unicode(i))
+	print "Online", r.getOnline(unicode(i))
+	print "Sub", r.getSub(unicode(i))
+	print "Name", r.getName(unicode(i))
+	print "Ask", r.getAsk(unicode(i))
+	print "Summary", r.getSummary()
+	
+	
+def acmd_invite(who, msg):
+	'"/invite nick" Invite someone to join this room'
+	jid = getjid(msg.strip().lower())
+	if issadmin(who.getStripped()):
+		if msg:
+			con.send(jabber.Presence(to=jid, type='subscribe'))
+			adduser(jid)
+			systoone(who, _('Invited <%s>').para(jid))
+		else:
+			raise MSG_COMMAND
+	else:
+		raise ADMIN_COMMAND
+
+def acmd_mute(who, msg):
+	'"/mute nick" Mute someone'
+	jid = getjid(msg.strip().lower())
+	if issadmin(who.getStripped()):
+		if msg:
+			if ismuted(jid):
+				delmute(jid)
+				systoone(who, _('<%s> has been unmuted').para(getdisplayname(jid)))
+				systoone(jid, _('You have been unmuted by <%s>').para(getdisplayname(who)))
+			elif not issadmin(jid) and not who == jid:
+				addmute(jid)
+				systoone(who, _('<%s> has been muted.').para(getdisplayname(jid)))
+				if ' ' in msg:
+					mutee, msg = msg.split(' ',1)
+					systoone(jid, _('<%s> has muted you for %s.').para(getdisplayname(who,1), msg))
+				else:
+					systoone(jid, _('<%s> has muted you.').para(getdisplayname(who,1)))
+		else:
+			raise MSG_COMMAND
+	else:
+		raise ADMIN_COMMAND		
+	
+def acmd_boot(who, msg):
+	'"/boot" The same as /kick'
+	acmd_kick(who, msg)
+	
+def acmd_kick(who, msg):
+	'"/kick nick" Kick someone out of this room'
+	if issadmin(who.getStripped()):
+		jid = getjid(msg.strip().lower())
+		if isadmin(who.getStripped()) and issuper(jid):
+			act = "kick"
+			print time.strftime("%Y-%m-%d %H:%M:%S"), getjid(who), "has tried to", act,"the Super Admin", jid
+			raise TOOLOW_COMMAND
+		else:		
+			if userinfo.has_key(jid):
+				boot(jid)
+				del userinfo[jid]
+				saveconfig()
+				systoall(_('Booted: <%s>').para(getdisplayname(jid,1)))
+	else:
+		raise ADMIN_COMMAND
+
+def acmd_ban(who, msg):
+	'"/ban nick" Forbid someone rejoin this room'
+	jid = getjid(msg.strip().lower())
+	if issadmin(who.getStripped()):
+		if msg:
+			if isadmin(who.getStripped()) and issuper(jid):
+				act = "ban"
+				print time.strftime("%Y-%m-%d %H:%M:%S"), getjid(who), "has tried to", act,"the Super Admin", jid
+				raise TOOLOW_COMMAND
+			else:		
+				if userinfo.has_key(jid):
+					boot(jid)
+				addban(msg)
+				systoall(_('Banned: <%s>').para(getdisplayname(msg,1)))
+		else:
+			raise MSG_COMMAND
+	else:
+		raise ADMIN_COMMAND
+
+def acmd_unban(who, msg):
+	'"/unban <nick>" Permit someone rejoin this room'
+	jid = getjid(msg.strip().lower())
+	if issadmin(who.getStripped()):
+		if msg:
+			if delban(jid):
+				deluser(jid)
+				systoone(who, _('Unbanned: <%s>').para(jid))
+			else:
+				systoone(who, _('%s is not banned').para(jid))
+		else:
+			raise MSG_COMMAND
+	else:
+		raise ADMIN_COMMAND
+	
+def acmd_addadmin(who, msg):
+	'"/addadmin <nick>" Set someone as administrator'
+	jid = getjid(msg.strip().lower())
+	if issadmin(who.getStripped()):
+		if msg:
+			if who.getStripped() != jid:
+				addadmin(jid)
+				systoone(who, _('Added <%s>').para(jid))
+				systoone(jid, _('<%s> added you as an admin').para(getdisplayname(who,1)))
+			else:
+				systoone(who, _('You are an admin already.'))
+		else:
+			raise MSG_COMMAND
+	else:
+		raise ADMIN_COMMAND
+		
+def acmd_deladmin(who, msg):
+	'"/deladmin <nick>" Remove admin right from someone'
+	jid = getjid(msg.strip().lower())
+	if issadmin(who.getStripped()):
+		if msg:
+			if issuper(jid):
+				systoone(who, _('<%s> is a super admin which can not be deleted.').para(jid))
+			else:
+				if deladmin(jid):
+					systoone(who, _('Removed <%s>').para(jid))
+					systoone(getjid(msg), _('<%s> removed you as an admin').para(getdisplayname(who,1)))
+				else:
+					systoone(who, _('<%s> is not an admin').para(jid))
+		else:
+			raise MSG_COMMAND
+	else:
+		raise ADMIN_COMMAND
+		
+def acmd_anick(who,msg):
+	'"/anick" Type /anick help for more information.'
+	msg = msg.strip().lower()
+	if issadmin(who.getStripped()):
+		if ' ' in msg:
+			name, msg = msg.split(' ', 2)
+			namecap = name.capitalize()
+			if msg in ('unreg', 'unregister'):
+				njid = nick['nickreg'].get(name, "")
+				del nick.nickreg[name]
+				if nick.nickname[njid] == name:
+					del nick.nickname[njid]
+				systoone(who, _('Anyone can now use the nick %s.').para(namecap))
+			else:
+				systoone(who, _('Please check what you typed is:\n1. a name with no spaces in it\n2. a valid command\n if it is both of these please report the but to an admin.'))
+		
+		elif msg in ('list', 'names'):
+				names = []
+				for i in nick.nickname.keys():
+					name = getdisplayname(i,1)
+					names.append('%s : %s\n' % (name, i))
+				systoone(who, _('Names: total (%d)\n%s').para(len(names), " ".join(names)))
+		
+		elif msg == 'help':
+			systoone(who, _('Useage: "/nick <nickname> <command> [<extra>]"\nCommands:\nunreg(ister) - Unregisters the nickname from the nicklist'))
+	else:
+		raise ADMIN_COMMAND
+	savenicklist()
+		
+#=================================
+#=         Room Commands         =
+#=================================
+def acmd_status(who, msg):
+	'"/status [message]" Set or see the bot\'s status'
+	msg = msg.strip().lower()
+	if issadmin(who.getStripped()):
+		if msg:
+			conf.general['status'] = msg
+			saveconfig()
+			sendpresence(msg)
+			systoone(who, _('Status has been set as: %s').para(msg))
+		else:
+			systoone(who, _('Status is: %s').para(conf.general['status']))
+	else:
+		raise ADMIN_COMMAND
+		
+def acmd_kill(who, msg):
+	'"/kill [message]" Close the room'
+	msg = msg.strip().lower()
+	if issadmin(who.getStripped()):
+		if msg:
+			systoall(_('Room shutdown by <%s> (%s)').para(getdisplayname(who),msg))
+		else:
+			systoall(_('Room shutdown by <%s>').para(getdisplayname(who)))
+		sys.exit(1)
+	else:
+		raise ADMIN_COMMAND
+	
+def acmd_refresh(who, msg):
+	'"/refresh" Update the conference bot website'
+	if not running:
+		t = threading.Thread(target=register_site)
+		t.setDaemon(True)
+		t.start()
+		systoone(who, _('Refreshing the website'))
+	else:
+		systoone(who, _('Refresh already in progress'))
+		
+def acmd_reload(who, msg):
+	'"/reload" Reload the config'
+	if issadmin(who.getStripped()):
+		readall()
+		wordfilter = cuss_list(None)
+		systoone(who, _('Bot reloaded.'))
+	else:
+		raise ADMIN_COMMAND
+
+		
+#===============================
+#=         DB Commands         =
+#===============================
+options = ['language', 'private', 'hide_status', 'debug', 'topic', 'sysprompt', 'logfileformat', 'status', 'maxnicklen', 'filtermask', 'floodback']
+def acmd_setoption(who, msg):
+	'"/setoption option value" Set an option\'s value'
+	msg = msg.strip().lower()
+	if issadmin(who.getStripped()):
+		if not msg or ' ' not in msg:
+			raise MSG_COMMAND
+		else:
+			option, msg = msg.split(' ', 1)
+			if option in options:
+				if option in ('private', 'hide_status', 'floodback'):
+					if msg.lower() in ("1", "yes", "on", "true"):
+						value = 1
+					else:
+						value = 0
+				if option == 'debug':
+					try:
+						value = int(msg)
+					except:
+						value = 0
+				else:
+					value = msg
+				conf.general[option] = value 
+				saveconfig()
+				readconfig()
+				systoone(who, _('Success'))
+			else:
+				systoone(who, _('Option [%s] may not exist or can not be set.').para(option))
+	else:
+		raise ADMIN_COMMAND
+
+def acmd_listoptions(who, msg):
+	'"/listoptions" List all options that can be changed'
+	msg = msg.strip().lower()
+	if issadmin(who.getStripped()):
+		txt = []
+		for option in options:
+			if option in ('private', 'hide_status', 'floodback'):
+				if conf.general[option]:
+					value = 'On'
+				else:
+					value = 'Off'
+			else:
+				value = conf.general[option]
+			txt.append("%s : %s" % (option, value))
+		systoone(who, _('Options: \n%s').para('\n'.join(txt)))
+	else:
+		raise ADMIN_COMMAND
+		
+def acmd_filter(who, msg):
+	'Same thing as /wordfilter'
+	acmd_wordfilter(who, msg)
+		
+def acmd_wordfilter(who, msg):
+	'"/filter" Type /wordfilter help for more information.'
+	filter = convert_seq(conf.general.get("wordfilter"), y = 2)
+	systoone(who, _('The words currently filtered are:\n%s').para(filter))
+	return
+	if issadmin(who.getStripped()):
+		if ' ' in msg:
+			cmd, msg = msg.split(' ', 1)
+			if cmd == 'add':
+				if len(msg) < 3:
+					systoone(who, _('You may not filter words with less than 3 letters in them.'))
+				else:
+					addfilter('wordfilter', msg)
+					systoone(who, _('Added %s to the filter list').para(msg))
+			
+			if cmd in ('del','delete','remove'):
+				if del_flag('wordfilter',msg):
+					systoone(who, _('Deleted %s from the filter list').para(msg))
+					
+				#==================
+				#= Checks for filters with u"" around them.
+				else:
+					msg = 'u"' + msg + '"'
+					if del_flag('wordfilter',msg):
+						systoone(who, _('Deleted %s from the filter list').para(msg))
+					else:
+						systoone(who, _('This filter doesn\'t exist'))
+						
+			if cmd in ('filter', 'mask'):
+				conf.general['filtermask'] = msg
+				systoone(who, _('Filtered words will now be masked by %s.').para(msg))
+
+			
+		elif msg == 'help':
+			systoone(who, _('''Useage: /filter [<command> <filter>]
+			Commands:
+			/filter - Displays the list of currently filtered words.
+			Add - Adds a filter ot the list.
+			Del - Deletes a filter from the list.
+			Mask - Changes the filter mask.'''))
+		
+		else:
+			filter = convert_seq(conf.general.get("wordfilter"), y = 2)
+			systoone(who, _('The words currently filtered are:\n%s').para(filter))
+	else:
+		filter = convert_seq(conf.general.get("wordfilter"), y = 2)
+		systoone(who, _('The words currently filtered are:\n%s').para(filter))
+
+		
+#=================================
+#=         Misc Commands         =
+#=================================
+def acmd_qna(who, msg, butnot=[], including=[], status = None):
+	'"/qna" Start a Question and Answer game'
+	
+	user = butnot[:]
+	
+	global qu, an, ra
+	Qs = games.Qs
+	As = games.As
+	Ps = games.Ps
+	qnalist = games.QnA
+	
+	#=======================
+	#= Get the list of lists
+	list = qnalist.keys()
+	ra = random.randrange(1,len(list))
+	list = list[ra]
+	
+	#=======================
+	#= Check to see if the list should be used.
+	while qnalist[list] == 0:
+		ra = random.randrange(1,len(list))
+		list = list[ra]
+		
+	#======================
+	#= Set the lists to be used.
+	prefix = Ps[list][0]
+	qu = Qs[list]
+	an = As[list]
+	listq = len(qu)
+	ra = None
+	
+	if issadmin(who.getStripped()):
+		if msg:
+			systoone(who, _('Currently under construction.'))
+
+		else:
+			nra = random.randrange(1,listq)
+			while nra == ra:
+				nra = random.randrange(1,listq)
+			ra = nra
+			systoall('Question and Answer')
+			sendtoall(prefix +" "+ qu[ra], user, including, status)
+			qna = an[ra]
+	else:
+		raise ADMIN_COMMAND
+		
+def acmd_spam(who, msg):
+	msg = msg.lower()
+	if issadmin(who):
+		if ' ' in msg:
+			i = 0
+			nick, msg = msg.split(' ', 1)
+			while int(i) <= int(msg):
+				sendtoone(nick, 'SPAM!')
+				i = i + 1
+		else:
+			systoone(who, _('Use it /spam <nick> <number>'))
+	else:
+		raise ADMIN_COMMAND
+#========================================
+#=         Depreciated Commands         =
+#========================================
+#===================================================
+#=         End Commands                            =
+#===================================================		
+
+
 def sendpresence(msg):
 	p = jabber.Presence()
 	p.setStatus(msg)
 	con.send(p)
-	
+
+
+#===================================================
+#=         Pre-Message Formating                   =
+#===================================================
 def messageCB(con,msg):
 	global ontesting
 	whoid = getjid(msg.getFrom())
@@ -745,9 +1261,9 @@ def messageCB(con,msg):
 				print '>>> [ERROR]', unicode(msg).encode(locale.getdefaultlocale()[1])
 			except:
 				print '>>> [ERROR]', unicode(msg).encode('utf-8')
-#		if statuses.has_key(getdisplayname(msg.getFrom())):
-#			sendstatus(unicode(msg.getFrom()),_("away"), _("Blocked"))
-#		boot(msg.getFrom().getStripped())
+		#if statuses.has_key(getdisplayname(msg.getFrom())):
+		#	sendstatus(unicode(msg.getFrom()),_("away"), _("Blocked"))
+		#boot(msg.getFrom().getStripped())
 	elif msg.getBody():
 		#check quality
 		if msg.getFrom().getStripped() == getjid(JID):
@@ -763,8 +1279,16 @@ def messageCB(con,msg):
 			xmllogf.flush()
 			return
 		userjid[whoid] = unicode(msg.getFrom())
-		if len(msg.getBody())>1024:
-			systoall(_("%s is being a moron trying to flood the channel").para(getdisplayname(msg.getFrom())))
+		if len(msg.getBody())>1024 and not issadmin(whoid):
+			if conf.general['floodback'] == 1:
+				i = 0
+				while i <= 10:
+					systoone(whoid, _('Thank you for trying to flood our chat room. Here is some refreshing water for you.'))
+					i = i + 1
+				return
+			#systoall(_("%s is being a moron trying to flood the channel").para(getdisplayname(msg.getFrom())))
+		elif ismuted(whoid):
+			systoone(whoid, _('You are muted and cannot talk.'))
 		elif msg.getBody()[:1] in commandchrs:
 			if conf.general.debug > 1:
 				print '......CMD......... %s [%s]' % (msg.getFrom(), msg.getBody())
@@ -773,16 +1297,31 @@ def messageCB(con,msg):
 			#check away
 			if has_userflag(msg.getFrom().getStripped(), 'away'):
 				del_userflag(msg.getFrom().getStripped(), 'away')
-#				systoone(msg.getFrom().getStripped(), _('Warning: Because you set "away" flag, so you can not receive and send any message from this bot, until you reset using "/away" command'))
-#				xmllogf.flush()
-#				return
+				#systoone(msg.getFrom().getStripped(), _('Warning: Because you set "away" flag, so you can not receive and send any message from this bot, until you reset using "/away" command'))
+				#xmllogf.flush()
+				#return
 			global suppressing,last_activity
 			suppressing=0
 			last_activity=time.time()
-			sendtoall('<%s> %s' % (getdisplayname(msg.getFrom()),msg.getBody()),
+			msgfilter = re.sub(wordfilter,conf.general.get('filtermask'), msg.getBody())
+			sendtoall('<%s> %s' % (getdisplayname(msg.getFrom()),msgfilter),
 				butnot=[getdisplayname(msg.getFrom())],
 				)
-			if con.getRoster().getShow(msg.getFrom().getStripped()) not in ['available','chat','online',None]:
+			
+			#==================
+			#= Extra Message Handlers
+			if os.path.getsize("Games.ini") != 0:
+				global ra
+				if ra:
+					if an[ra].lower() in msg.getBody().lower():
+						systoall (_('%s got the answer to \"%s\" right!').para(getdisplayname(whoid,1), qu[ra]))
+						score = 1
+						if games['QnA Scores'].get(whoid, ""):
+							score = 1 + int(games['QnA Scores'].get(whoid, ""))
+						games['QnA Scores'][whoid] = score
+						ra = None
+						saveGames()
+			if isbusy(msg.getFrom().getStripped()):
 				systoone(msg.getFrom(), _('Warning: You are marked as "busy" in your client,\nyou will not see other people talk,\nset yourself "available" in your client to see their replies.'))
 	xmllogf.flush() # just so flushes happen regularly
 
@@ -821,9 +1360,9 @@ def presenceCB(con,prs):
 			wel = welcome.getvalue()
 		else:
 			wel = welcome
-		systoone(who, wel % {'version':version})
+		systoone(who, wel % {'revision':revision})
 		systoone(who, _('''Topic: %(topic)s
-%(lastlog)s''').para({
+			%(lastlog)s''').para({
 			"topic" : conf.general['topic'],
 			"lastlog" : "\n".join(lastlog),
 			})  + '\n---------------------------')
@@ -838,11 +1377,7 @@ def presenceCB(con,prs):
 		show = prs.getShow()
 		if show in [None,'chat','available','online']:
 			sendstatus(who, _('here'),prs.getStatus())
-		elif show in ['xa']:
-			sendstatus(who, _('away'),prs.getStatus())
-		elif show in ['away']:
-			sendstatus(who, _('away'),prs.getStatus())
-		elif show in ['dnd']:
+		elif show in ['xa', 'away', 'dnd']:
 			sendstatus(who, _('away'),prs.getStatus())
 		else:
 			sendstatus(who, _('away'),show+" [[%s]]" % prs.getStatus())
@@ -881,12 +1416,26 @@ def readoptionorprompt(section, option, description):
 		print description,
 		conf[section][option] = raw_input()
 	
+def saveall():
+	try:
+		saveconfig()
+		savenicklist()
+		saveGames()
+	except:
+		traceback.print_exc()
+		
+def readall():
+	readconfig()
+	readnicklist()
+	readGames()
+	
 def readconfig():
 	global conf, welcome, userinfo
 
 	conf = DictIni()
 	
-	#general config
+	#=======================
+	#= General Config
 	conf.general.server = 'gmail.com'
 	conf.general.resource = 'conference'
 	conf.general.private = 0
@@ -894,28 +1443,21 @@ def readconfig():
 	conf.general.debug = 1
 	conf.general.configencoding = 'utf-8'
 	conf.general.sysprompt = '***'
-	conf.general.logpath = ''
+	conf.general.logpath = 'logs'
 	conf.general.language = ''
 	conf.general.logfileformat = '%Y%m%d'
 	conf.general.status = _('Ready')
-	
-	#general emotes
-	conf.emotes.cry = _('cries')
-	conf.emotes.jump = _('jumps')
-	conf.emotes.hop = _('hops')
-	conf.emotes.sigh = _('sighs')
-	conf.emotes.fart = _('farts')
-	conf.emotes.smile = _('smiles')
-	conf.emotes.keeldie = _('keels over and dies')
-	conf.emotes.clap = _('claps')
-	conf.emotes.laugh = _('laughs')
+	conf.general.filtermask = '<Censored>'
+	conf.general.maxnicklen = 10
+	conf.general.floodback = 0
+	conf.general.wordfilter = 'fuc*k','shit','damn','mofo',
 	
 	if len(sys.argv)>1:
 		conf.setfilename(sys.argv[1])
 		conf.read(sys.argv[1])
 	else:
-		conf.setfilename("confbot.ini")
-		conf.read("confbot.ini")
+		conf.setfilename("config.ini")
+		conf.read("config.ini")
 		
 	#get real value
 	readoptionorprompt('general', "account", _("What is the account name of your bot:"))
@@ -934,7 +1476,7 @@ def readconfig():
 		if 'super' in flags: break
 	else:
 		print _("Input super admin email account:"),
-		admin = raw_input()
+		admin = raw_input().lower()
 		conf.userinfo[admin] = ['user', 'super']
 			
 	#deal with welcome message
@@ -959,15 +1501,47 @@ def saveconfig():
 	except:
 		traceback.print_exc()
 		
+def readnicklist():
+	global nick
+
+	nick = DictIni()
+	
+	nick.setfilename("nicklist.ini")
+	nick.read("nicklist.ini")
+		
+def savenicklist():
+	"Saves the nicklist to disk"
+	try:	
+		nick.save()
+	except:
+		traceback.print_exc()
+		
+def readGames():
+	global games, q, a, r
+
+	games = DictIni()
+	
+	games.setfilename("Games.ini")
+	games.read("Games.ini")
+		
+def saveGames():
+	"Saves the Games to disk"
+	try:	
+		games.save()
+	except:
+		traceback.print_exc()
+		
 def connect():
-	global con
+	global con, revision
 	debug = conf.general.debug
+	
+	revision = get_svn_version()
 	
 	print ">>> Connecting"
 	general = conf.general
 	if debug:
 		print '>>> debug is [%d]' % general['debug']
-		print '>>> host is [%s]' %general['server']
+		print '>>> host is [%s]' % general['server']
 		print '>>> account is [%s]' % general['account']
 		print '>>> resource is [%s]' % general['resource']
 	con = jabber.Client(host=general['server'],debug=False ,log=xmllogf,
@@ -988,13 +1562,15 @@ def connect():
 #			del userinfo[i]
 	for i in r.getJIDs():
 		if not userinfo.has_key(i):
-			adduser(getdisplayname(i))
+			adduser(getcleanname(i))
 			
 	saveconfig()
 	sendpresence(conf.general['status'])
-#	systoall(_('Channel is started.'))
-	print ">>> Online!"
+	
+#	systoall(_('The channel has started.'))
+	print '>>> Online with Revision %d' % revision
 	print >>logf, 'The bot is started!', time.strftime('%Y-%m-%d %H:%M:%S')
+	
 
 def register_site():
 	global last_update, running
@@ -1018,7 +1594,7 @@ def register_site():
 				for k,v in userinfo.items() 
 				if "super" in v
 			]),
-		'lang': conf['general']['language'],
+		'lang': conf.general['language'],
 		'version':version,
 		'topic':general['topic'],
 		}
@@ -1031,8 +1607,9 @@ def register_site():
 	last_update = time.time()
 	running = False
 	
-readconfig()
-saveconfig()
+readall()
+saveall()
+wordfilter = cuss_list(None)
 
 #set system default encoding to support unicode
 reload(sys)
@@ -1052,6 +1629,9 @@ for i, func in globals().items():
 general = conf.general
 
 #logfile process
+if not os.path.isdir(general['logpath']) and not general['logpath'] == '':
+	os.mkdir(general['logpath'])
+	print "ALERT: Directory doesn't exist, making folder \""+ general['logpath'] +"\""
 logf = file(os.path.join(general['logpath'], time.strftime(general['logfileformat']) + '.log'), "a+")
 
 con = None
