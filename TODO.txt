@@ -7,3 +7,7 @@ In /nick, we need to offer a way to limit the number of regestered nicks a user 
 Add a user definable limit to how long a user can receive messages without sending anyway (a.k.a. going inactive). This is an attempt to increase the time large bots have before Google labels them as "spamming" and blocks them for 24 hours. - [Pakattack161]
 
 Add more options to /anick. I'm looking to add the ability to register nicks, change a nick outside of the normal boundries, and lock nicks. - [Pakattack161]
+
+Update get_svn_version so it can get a revision from a clean version outside of the svn. - [Pakattack161]
+
+Fix the problem of the filter regex not properly updating. - [Pakattack161]

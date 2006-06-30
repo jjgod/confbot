@@ -3,6 +3,35 @@ NOTICE: Remember that this is the Trunk version (No, there is no Stable, yet) so
 For change logs from 09/05 (when it was originally being worked on), look towards the end of the file.
 
 2006/06/28
+	[Added]
+	-has_flag, add_flag, del_flag. However at the moment they only
+		modify conf.general.
+	
+	-Added the exception "CUSS_COMMAND" which outputs: 
+		"Please do not use foul language."
+		
+	-Users can now use /filterlist to display a list of filtered words.
+		
+	[Updated]
+	-You can now use /away without a reason.
+	
+	-All cmds now get run through the langauge filter. 
+		acmds don't at the moment. 
+	
+	-All acmds check for the admin in cmd instead of in each function.
+	
+	-/nick now changes msg into 
+		msg.encode(locale.getdefaultlocale()[1],'replace')
+		to prevent nicklist.ini corruption.
+	
+	[Fixed]
+	-It won't send messages to people with the "away" flag anymore.
+
+	[Misc]
+	-/filter doesn't properly update each time a word is added or removed
+		so a reboot is required for the changes to take effect.
+	
+2006/06/28
 	[Updated]
 	-Added a help option to /dice and clean up some of it's coding.
 
@@ -21,7 +50,7 @@ Most of the changes between revision 32 and 36 are here.
 		types /qna it will ask the room a question similar to this:
 			*** Question and Answer
 			Who is the writer of _The Peace War_
-		And the first person to have the answer, in this case "Verno Vinge", 
+		And the first person to have the answer, in this case "Vernor Vinge", 
 		any where in their message gets 1 point added to their score.
 	
 		For more information check "command_docs.txt"
