@@ -1,3 +1,4 @@
+title Google Talk: Conference Bot
 @echo off
 :end
 confbot.py

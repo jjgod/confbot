@@ -129,6 +129,7 @@ def getjid(x):
 
 def cuss_list():
 	"Returns a formated Regex"
+	readconfig()
 	#print conf.general.get("wordfilter")
 	j = convert_seq(conf.general.get("wordfilter"), y = 1)
 	#print j
@@ -1044,7 +1045,7 @@ def acmd_refresh(who, msg):
 def acmd_reload(who, msg):
 	'"/reload" Reload the config'
 	readall()
-	wordfilter = cuss_list(None)
+	wordfilter = cuss_list()
 	systoone(who, _('Bot reloaded.'))
 
 		
@@ -1420,7 +1421,7 @@ def readconfig():
 	conf.general.filtermask = '<Censored>'
 	conf.general.maxnicklen = 10
 	conf.general.floodback = 0
-	conf.general.wordfilter = 'fuc*k','shit','damn','mofo',
+	conf.general.wordfilter = 'fuc*k','shit','damn','mofo','nigger',
 	
 	if len(sys.argv)>1:
 		conf.setfilename(sys.argv[1])
@@ -1430,7 +1431,7 @@ def readconfig():
 		conf.read("config.ini")
 		
 	#get real value
-	readoptionorprompt('general', "account", _("What is the account name () of your bot:"))
+	readoptionorprompt('general', "account", _("What is the account name of your bot:"))
 	readoptionorprompt('general', "password", _("What is the password of your bot:"))
 	readoptionorprompt('general', "topic", _("Write a short description about your bot:"))
 	
@@ -1461,9 +1462,7 @@ def saveconfig():
 		conf.general.sysprompt = conf.general.sysprompt.encode(encoding)
 		conf.general.topic = conf.general.topic.encode(encoding)
 		conf.general.status = conf.general.status.encode(encoding)
-		for key, value in conf.emotes.items():
-			conf.emotes[key] = value.encode(encoding)
-			
+		
 		conf.save()
 		file('welcome.txt', 'w').write(welcome.encode(encoding))
 	except:
@@ -1485,7 +1484,7 @@ def savenicklist():
 		traceback.print_exc()
 		
 def readGames():
-	global games, q, a, r
+	global games
 
 	games = DictIni()
 	

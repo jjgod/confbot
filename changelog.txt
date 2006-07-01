@@ -2,7 +2,20 @@ NOTICE: Remember that this is the Trunk version (No, there is no Stable, yet) so
 
 For change logs from 09/05 (when it was originally being worked on), look towards the end of the file.
 
-2006/06/28
+2006/06/30
+	[Added]
+	-Nigger is now one of the default words filtered.
+	
+	[Updated]
+	-The title for the .bat now shows as "Google Talk: Conference Bot"
+	
+	[Fixed]
+	-Fixed a bug with /reload which was trying to pass an argument to cuss_list
+	
+	[Misc]
+	-Started uploading a new messages.pot with each revision.
+
+2006/06/29
 	[Added]
 	-has_flag, add_flag, del_flag. However at the moment they only
 		modify conf.general.
