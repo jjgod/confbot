@@ -98,6 +98,8 @@ def getdisplayname(x):
 		x = x.capitalize()
 		if issuper(getjid(x)):
 			x = '_'+ x +'_'
+	if '%' in x and '@msn' in x[x.find('%'):]:
+		x = x[:x.find('%')]
 	if '@' in x and x[x.find('@'):] == "@" + server:
 		x = x[:x.find("@")]
 	return x
@@ -612,6 +614,8 @@ def cmd_names(who, msg):
 	r = con.getRoster()
 	names = []
 	for i in r.getJIDs():
+		if '@' not in unicode(i):
+			continue
 		state = r.getOnline(unicode(i))
 		name = getdisplayname(i)
 		if issuper(i.getStripped()):
@@ -757,7 +761,7 @@ def cmd_chat(who, msg):
 	'"/chat" Remove "away" flag of someone, just like "/away"'
 	if has_userflag(who.getStripped(), 'away'):
 		del_userflag(who.getStripped(), 'away')
-		systoall(_('%s is actively interested in chatting.').para(who.getStripped()), [who])
+		systoall(_('%s is actively interested in chatting.').para(getdisplayname(who)), [who])
 		systoone(who, _('You can begin to chat now.'))
 	else:
 		systoone(who, _('You didn\'t set _away_ flag.'))
@@ -863,24 +867,36 @@ def cmd_filterlist(who, msg):
 		filter = convert_seq(conf.general.get("wordfilter"), y = 2)
 		systoone(who, _('The words currently filtered are:\n%s').para(filter))
 
+def cmd_info(who, msg):
+	'Useage: /info <nickname>'
+	if msg:
+		i = getjid(msg.strip().lower())
+		r = con.getRoster()
+		resource = unicode(i).getResource()
+		status = r.getStatus(unicode(i))
+		show = r.getShow(unicode(i))
+		online = r.getOnline(unicode(i))
+		sub = r.getSub(unicode(i))
+		name = r.getName(unicode(i))
+		ask = r.getAsk(unicode(i))
+		systoone(who, _("Resource: %s").para(resource))
+		systoone(who, _("Status: %s").para(status))
+		systoone(who, _("Show: %s").para(show))
+		systoone(who, _("Online: %s").para(online))
+		systoone(who, _("Sub: %s").para(sub))
+		systoone(who, _("Name: %s").para(name))
+		systoone(who, _("Ask: %s").para(ask))
+		#print "Summary", r.getSummary()
+	else:
+		raise MSG_COMMAND
+	
+	
 #=====================================================
 #=         Admin Commands                            =
 #=====================================================
 #=================================
 #=         User Commands         =
-#=================================
-def acmd_info(who, msg):
-	i = getjid(msg.strip().lower())
-	r = con.getRoster()
-	print "Status", r.getStatus(unicode(i))
-	print "Show", r.getShow(unicode(i))
-	print "Online", r.getOnline(unicode(i))
-	print "Sub", r.getSub(unicode(i))
-	print "Name", r.getName(unicode(i))
-	print "Ask", r.getAsk(unicode(i))
-	print "Summary", r.getSummary()
-	
-	
+#=================================	
 def acmd_invite(who, msg):
 	'"/invite nick" Invite someone to join this room'
 	jid = getjid(msg.strip().lower())

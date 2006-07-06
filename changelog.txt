@@ -2,6 +2,17 @@ NOTICE: Remember that this is the Trunk version (No, there is no Stable, yet) so
 
 For change logs from 09/05 (when it was originally being worked on), look towards the end of the file.
 
+2006/07/05
+	[Updated]
+	-getdisplayname() now properly displays nicknames from MSN transports.
+	
+	-/names won't list a "person" who's email address doesn't have a '@' in it.
+		(Blocks transports from being shown.)
+	
+2006/07/02
+	[Updated]
+	-It now displays the users nick when they go away and come back.
+
 2006/06/30
 	[Added]
 	-Nigger is now one of the default words filtered.
