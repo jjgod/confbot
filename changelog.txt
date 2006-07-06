@@ -9,6 +9,11 @@ For change logs from 09/05 (when it was originally being worked on), look toward
 	-/names won't list a "person" who's email address doesn't have a '@' in it.
 		(Blocks transports from being shown.)
 	
+	[Fixed]
+	-Made /info a cmd and got it to display the text through systoone.
+		The fix was that it was incomplete and errored when trying to
+		get the resource for the user. That's been comented out now.
+	
 2006/07/02
 	[Updated]
 	-It now displays the users nick when they go away and come back.
