@@ -2,6 +2,15 @@ NOTICE: Remember that this is the Trunk version (No, there is no Stable, yet) so
 
 For change logs from 09/05 (when it was originally being worked on), look towards the end of the file.
 
+2006/07/10
+	[Updated]
+	-MessageCB and sendtoall to format the messages that get sent to MSN
+		users to make it look more like a MSN chatroom.
+		
+		Note: Now it just sends the msg through sendtoall and stores the user
+			name in "msgname".
+		
+
 2006/07/05
 	[Updated]
 	-getdisplayname() now properly displays nicknames from MSN transports.

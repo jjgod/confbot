@@ -343,10 +343,10 @@ def sendtoall(msg,butnot=[],including=[], status = None):
 	print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode("utf-8")
 	logf.flush()
 	if conf.general.debug:
-		try:
-			print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode(locale.getdefaultlocale()[1],'replace')
-		except:
-			print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode("utf-8")
+			try:
+				print time.strftime("%Y-%m-%d %H:%M:%S"), "<",msgname,">", msg.encode(locale.getdefaultlocale()[1],'replace')
+			except:
+				print time.strftime("%Y-%m-%d %H:%M:%S"), "<",msgname,">", msg.encode("utf-8")
 	for i in r.getJIDs():
 		#print i, uset.mutechange.get(i)
 		#away represents users that don't want to chat
@@ -356,7 +356,11 @@ def sendtoall(msg,butnot=[],including=[], status = None):
 		#	continue
 		state=r.isOnline(i)
 		if r.isOnline(i) and r.getShow(i) in ['available','chat','online',None]:
-			sendtoone(i, msg)
+			if re.compile('msn\.jabber').search(getjid(i)):
+				sendtoone(i, '%s says:' % (msgname))
+				sendtoone(i, '   %s' % (msg))
+			else:
+				sendtoone(i, '<%s> %s' % (msgname,msg))
 	if not msg.startswith(conf.general['sysprompt']):
 		lastlog.append(msg)
 	if len(lastlog)>5:
@@ -872,7 +876,7 @@ def cmd_info(who, msg):
 	if msg:
 		i = getjid(msg.strip().lower())
 		r = con.getRoster()
-		#resource = j.getResource()
+		#resource = i.getResource()
 		status = r.getStatus(unicode(i))
 		show = r.getShow(unicode(i))
 		online = r.getOnline(unicode(i))
@@ -1291,7 +1295,9 @@ def messageCB(con,msg):
 			suppressing=0
 			last_activity=time.time()
 			msgfilter = re.sub(wordfilter,conf.general.get('filtermask'), msg.getBody())
-			sendtoall('<%s> %s' % (getdisplayname(msg.getFrom()),msgfilter),
+			global msgname
+			msgname = getdisplayname(whoid)
+			sendtoall('%s' % (msgfilter),
 				butnot=[getdisplayname(msg.getFrom())],
 				)
 			

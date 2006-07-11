@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: Sat Jul 01 00:36:32 2006\n"
+"POT-Creation-Date: Mon Jul 10 23:54:18 2006\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,116 +29,116 @@ msgstr ""
 msgid "Converts a user@domain/resource to a displayable nick"
 msgstr ""
 
-#: ../confbot.py:106
+#: ../confbot.py:108
 #, docstring
 msgid "Converts a user@domain/resource to simply a user name."
 msgstr ""
 
-#: ../confbot.py:116
+#: ../confbot.py:118
 #, docstring
 msgid "returns a full jid from a display name"
 msgstr ""
 
-#: ../confbot.py:131
+#: ../confbot.py:133
 #, docstring
 msgid "Returns a formated Regex"
 msgstr ""
 
-#: ../confbot.py:180
+#: ../confbot.py:182
 #, docstring
 msgid "add a flag to a key, return 0 if it already has that flag"
 msgstr ""
 
-#: ../confbot.py:190
+#: ../confbot.py:192
 #, docstring
 msgid "del a flag, return 0 if the key doesn't have the flag"
 msgstr ""
 
-#: ../confbot.py:204
+#: ../confbot.py:206
 #, docstring
 msgid "return true if the user is a userflag"
 msgstr ""
 
-#: ../confbot.py:210
+#: ../confbot.py:212
 #, docstring
 msgid "add an flag to a user, return 0 if they already have that flag"
 msgstr ""
 
-#: ../confbot.py:220
+#: ../confbot.py:222
 #, docstring
 msgid "del an flag, return 0 if they didn't have the flag"
 msgstr ""
 
-#: ../confbot.py:230
+#: ../confbot.py:232
 #, docstring
 msgid "set an flag, remove all existed flag"
 msgstr ""
 
-#: ../confbot.py:419
+#: ../confbot.py:425
 msgid "%s is %s (%s)"
 msgstr ""
 
-#: ../confbot.py:421
+#: ../confbot.py:427
 msgid "%s is %s"
 msgstr ""
 
-#: ../confbot.py:424
+#: ../confbot.py:430
 #, docstring
 msgid "Remove a user from the chatroom"
 msgstr ""
 
-#: ../confbot.py:457
+#: ../confbot.py:463
 msgid "Unknown command \"%s\"."
 msgstr ""
 
-#: ../confbot.py:459
+#: ../confbot.py:465
 msgid "This is admin command. You are _*not*_ an admin."
 msgstr ""
 
-#: ../confbot.py:461 ../confbot.py:465
+#: ../confbot.py:467 ../confbot.py:471
 msgid "Please refrain from the use of foul language."
 msgstr ""
 
-#: ../confbot.py:463
+#: ../confbot.py:469
 msgid "You cannot use this command against a Super Admin."
 msgstr ""
 
-#: ../confbot.py:470
+#: ../confbot.py:476
 msgid "There is no this person"
 msgstr ""
 
-#: ../confbot.py:479
+#: ../confbot.py:485
 #, docstring
 msgid "Type /nick help for more information."
 msgstr ""
 
-#: ../confbot.py:508 ../confbot.py:514 ../confbot.py:631 ../confbot.py:1007
+#: ../confbot.py:514 ../confbot.py:520 ../confbot.py:639 ../confbot.py:1027
 msgid ""
 "Names: total (%d)\n"
 "%s"
 msgstr ""
 
-#: ../confbot.py:522
+#: ../confbot.py:528
 msgid "Please use a nick shorter than %d. Thank you."
 msgstr ""
 
-#: ../confbot.py:525
+#: ../confbot.py:531
 msgid "The nick %s has already been regestered to %s."
 msgstr ""
 
-#: ../confbot.py:532
+#: ../confbot.py:538
 msgid "The nick %s has now been regestered to your email address."
 msgstr ""
 
-#: ../confbot.py:535
+#: ../confbot.py:541
 msgid "How _*dare*_ you try to steal the nick %s from %s?!"
 msgstr ""
 
-#: ../confbot.py:539 ../confbot.py:998
+#: ../confbot.py:545 ../confbot.py:1018
 msgid "Anyone can now use the nick %s."
 msgstr ""
 
-#: ../confbot.py:541 ../confbot.py:1000
+#: ../confbot.py:547 ../confbot.py:1020
 msgid ""
 "Please check what you typed is:\n"
 "1. a name with no spaces in it\n"
@@ -146,7 +146,7 @@ msgid ""
 " if it is both of these please report the but to an admin."
 msgstr ""
 
-#: ../confbot.py:544
+#: ../confbot.py:550
 msgid ""
 "Useage: \"/nick <nickname> [<command>]\"\n"
 "Commands:\n"
@@ -155,54 +155,54 @@ msgid ""
 "unreg(ister) - Unregisters the nickname from your email"
 msgstr ""
 
-#: ../confbot.py:551
+#: ../confbot.py:557
 msgid "Please use a shorter name. Thank you."
 msgstr ""
 
-#: ../confbot.py:553
+#: ../confbot.py:559
 msgid "The nick _%s_ has already been regestered to %s."
 msgstr ""
 
-#: ../confbot.py:555
+#: ../confbot.py:561
 msgid "The nick _%s_ is already being used by %s."
 msgstr ""
 
-#: ../confbot.py:557 ../confbot.py:568
+#: ../confbot.py:563 ../confbot.py:574
 msgid "You will now send messages as <%s>"
 msgstr ""
 
-#: ../confbot.py:575
+#: ../confbot.py:581
 #, docstring
 msgid "\"/me <msg>\" Says an emote as you"
 msgstr ""
 
-#: ../confbot.py:579
+#: ../confbot.py:585
 msgid "**%s %s**"
 msgstr ""
 
-#: ../confbot.py:582
+#: ../confbot.py:588
 #, docstring
 msgid "\"/smite\" smites someone. Syntax: /smite person"
 msgstr ""
 
-#: ../confbot.py:584
+#: ../confbot.py:590
 msgid "It works like /smite person"
 msgstr ""
 
-#: ../confbot.py:588
+#: ../confbot.py:594
 msgid "Chuck Norris resents the smite attempt and roundhouse kicks %s in the face"
 msgstr ""
 
-#: ../confbot.py:590
+#: ../confbot.py:596
 msgid "%s smites %s"
 msgstr ""
 
-#: ../confbot.py:593
+#: ../confbot.py:599
 #, docstring
 msgid "\"/help\" Show this help message"
 msgstr ""
 
-#: ../confbot.py:595
+#: ../confbot.py:601
 msgid ""
 "Useage: \"/nick <nickname> [<command>]\"\n"
 "Commands:\n"
@@ -210,106 +210,106 @@ msgid ""
 "unreg(ister) - Unregisters the nickname from your email"
 msgstr ""
 
-#: ../confbot.py:599
+#: ../confbot.py:605
 msgid ""
 "Commands: \n"
 "%s"
 msgstr ""
 
-#: ../confbot.py:601
+#: ../confbot.py:607
 msgid ""
 "Admin commands: \n"
 "%s"
 msgstr ""
 
-#: ../confbot.py:602
+#: ../confbot.py:608
 msgid ""
 "See http://coders.meta.net.nz/~perry/jabber/confbot.php for more details.\n"
 "Also see http://www.donews.net/limodou for Chinese version."
 msgstr ""
 
-#: ../confbot.py:611
+#: ../confbot.py:617
 #, docstring
 msgid "\"/names\" List all the people in the room"
 msgstr ""
 
-#: ../confbot.py:634
+#: ../confbot.py:642
 #, docstring
 msgid "\"/msg nick message\" Send a private message to someone"
 msgstr ""
 
-#: ../confbot.py:636
+#: ../confbot.py:644
 msgid "Usage: )msg nick message"
 msgstr ""
 
-#: ../confbot.py:639
+#: ../confbot.py:647
 msgid "Warning: Because you set \"away\" flag, so you can not receive and send any message from this bot, until you reset using \"/away\" command"
 msgstr ""
 
-#: ../confbot.py:643
+#: ../confbot.py:651
 msgid "<%s> has set himself in \"away\" mode, so you could not send him a message."
 msgstr ""
 
-#: ../confbot.py:646
+#: ../confbot.py:654
 msgid "<%s> has set themselves as busy or is idle so the message has not been delivered."
 msgstr ""
 
-#: ../confbot.py:650
+#: ../confbot.py:658
 msgid "*<%s>* %s"
 msgstr ""
 
-#: ../confbot.py:651
+#: ../confbot.py:659
 msgid ">%s> %s"
 msgstr ""
 
-#: ../confbot.py:659
+#: ../confbot.py:667
 #, docstring
 msgid "Type /settings help for more information."
 msgstr ""
 
-#: ../confbot.py:686
+#: ../confbot.py:694
 msgid "%s is currently %s"
 msgstr ""
 
-#: ../confbot.py:688
+#: ../confbot.py:696
 msgid "The setting you're trying to change doesn't seem to exist."
 msgstr ""
 
-#: ../confbot.py:690
+#: ../confbot.py:698
 msgid ""
 "Useage: /settings <setting> <value>\n"
 "\t\t\tSettings:\n"
 "\t\t\tmutechange - Mute the announcement when a user comes online, is busy or idle, and goes offline."
 msgstr ""
 
-#: ../confbot.py:699
+#: ../confbot.py:707
 #, docstring
 msgid "\"/lang [language]\" Set language to \"language\" or reset to default"
 msgstr ""
 
-#: ../confbot.py:703
+#: ../confbot.py:711
 msgid "Your language has been set as \"%s\"."
 msgstr ""
 
-#: ../confbot.py:706
+#: ../confbot.py:714
 msgid "Your language has been set as default."
 msgstr ""
 
-#: ../confbot.py:709
+#: ../confbot.py:717
 #, docstring
 msgid "\"/listlangs\" List all support language"
 msgstr ""
 
-#: ../confbot.py:710
+#: ../confbot.py:718
 msgid "Available languages: %s"
 msgstr ""
 
-#: ../confbot.py:713 ../confbot.py:715
+#: ../confbot.py:721 ../confbot.py:723
 #, docstring
 msgid "\"/vcard\" usage: /vcard full name**personal quote**website address. ** is the field seperator."
 msgstr ""
 
-#: ../confbot.py:719
+#: ../confbot.py:727
 msgid ""
 "INFO FOR %s: \n"
 " Name: %s \n"
@@ -317,83 +317,83 @@ msgid ""
 " Web Address: http://%s"
 msgstr ""
 
-#: ../confbot.py:725
+#: ../confbot.py:733
 #, docstring
 msgid "\"/leave\" The same as /quit"
 msgstr ""
 
-#: ../confbot.py:729
+#: ../confbot.py:737
 #, docstring
 msgid "\"/exit\" The same as /quit"
 msgstr ""
 
-#: ../confbot.py:733
+#: ../confbot.py:741
 #, docstring
 msgid "\"/quit\" Quit this room for ever"
 msgstr ""
 
-#: ../confbot.py:736
+#: ../confbot.py:744
 msgid "Quit: <%s> %s"
-msgstr ""
-
-#: ../confbot.py:741
-#, docstring
-msgid "\"/away [message]\" Set \"away\"(need message) or \"chat\"(no message) flag of someone"
 msgstr ""
 
 #: ../confbot.py:749
 #, docstring
-msgid "\"/nochat [message]\" Set \"away\" flag of someone, just like \"/away message\""
-msgstr ""
-
-#: ../confbot.py:753
-msgid "%s is temporarily away. %s"
-msgstr ""
-
-#: ../confbot.py:754
-msgid "Warning: Because you set \"away\" flag, so you can not receive and send any message from this bot, until you reset using \"/away\" or \"/chat\" command or just send a message to the chatroom."
+msgid "\"/away [message]\" Set \"away\"(need message) or \"chat\"(no message) flag of someone"
 msgstr ""
 
 #: ../confbot.py:757
 #, docstring
-msgid "\"/chat\" Remove \"away\" flag of someone, just like \"/away\""
-msgstr ""
-
-#: ../confbot.py:760
-msgid "%s is actively interested in chatting."
+msgid "\"/nochat [message]\" Set \"away\" flag of someone, just like \"/away message\""
 msgstr ""
 
 #: ../confbot.py:761
+msgid "%s is temporarily away. %s"
+msgstr ""
+
+#: ../confbot.py:762
+msgid "Warning: Because you set \"away\" flag, so you can not receive and send any message from this bot, until you reset using \"/away\" or \"/chat\" command or just send a message to the chatroom."
+msgstr ""
+
+#: ../confbot.py:765
+#, docstring
+msgid "\"/chat\" Remove \"away\" flag of someone, just like \"/away\""
+msgstr ""
+
+#: ../confbot.py:768
+msgid "%s is actively interested in chatting."
+msgstr ""
+
+#: ../confbot.py:769
 msgid "You can begin to chat now."
 msgstr ""
 
-#: ../confbot.py:763
+#: ../confbot.py:771
 msgid "You didn't set _away_ flag."
 msgstr ""
 
-#: ../confbot.py:766
+#: ../confbot.py:774
 #, docstring
 msgid "\"/mode option\" Set or remove flag to someone. For example: \"+s\" filter system message, \"-s\" receive system message"
 msgstr ""
 
-#: ../confbot.py:779
+#: ../confbot.py:787
 msgid "The proceed public system messages will be skipped. Until you run /mode -s command"
 msgstr ""
 
-#: ../confbot.py:782
+#: ../confbot.py:790
 msgid "You can receive public system messages now."
 msgstr ""
 
-#: ../confbot.py:784
+#: ../confbot.py:792
 msgid "Usage: /mode [+]s"
 msgstr ""
 
-#: ../confbot.py:791
+#: ../confbot.py:799
 #, docstring
 msgid "\"/version\" Show version of this bot"
 msgstr ""
 
-#: ../confbot.py:792
+#: ../confbot.py:800
 msgid ""
 "Revision: %s \n"
 "\t\n"
@@ -404,284 +404,313 @@ msgid ""
 "\thttp://www.donews.net/limodou."
 msgstr ""
 
-#: ../confbot.py:801
+#: ../confbot.py:809
 #, docstring
 msgid "\"/die\" rolls a random number"
 msgstr ""
 
-#: ../confbot.py:802
+#: ../confbot.py:810
 msgid "%s rolls a %s"
 msgstr ""
 
-#: ../confbot.py:805
+#: ../confbot.py:813
 #, docstring
 msgid "\"/dice [<number of dice>] [<number of sides>]\" rolls a random number"
 msgstr ""
 
-#: ../confbot.py:817 ../confbot.py:832
+#: ../confbot.py:825 ../confbot.py:840
 msgid "The number of dice is auto capped at 20."
 msgstr ""
 
-#: ../confbot.py:819
+#: ../confbot.py:827
 msgid "Please choose 4 or more sides"
 msgstr ""
 
-#: ../confbot.py:824
+#: ../confbot.py:832
 msgid "%s rolls %s with %s %s-sided dice"
 msgstr ""
 
-#: ../confbot.py:836
+#: ../confbot.py:844
 msgid "%s rolls %s with %s dice"
 msgstr ""
 
-#: ../confbot.py:841
+#: ../confbot.py:849
 #, docstring
 msgid "\"/whois [nick]\" View someone's status"
 msgstr ""
 
-#: ../confbot.py:847 ../confbot.py:852
+#: ../confbot.py:855 ../confbot.py:860
 msgid "Info: %s"
 msgstr ""
 
-#: ../confbot.py:855
+#: ../confbot.py:863
 #, docstring
 msgid "\"/getemail <nickname>\" Returns a users email address from their nickname."
 msgstr ""
 
-#: ../confbot.py:862
+#: ../confbot.py:870
 #, docstring
 msgid "Displays a list of filtered words."
 msgstr ""
 
-#: ../confbot.py:864 ../confbot.py:1140 ../confbot.py:1143
+#: ../confbot.py:872 ../confbot.py:1160 ../confbot.py:1163
 msgid ""
 "The words currently filtered are:\n"
 "%s"
 msgstr ""
 
-#: ../confbot.py:885
+#: ../confbot.py:875
+#, docstring
+msgid "Useage: /info <nickname>"
+msgstr ""
+
+#: ../confbot.py:887
+msgid "Status: %s"
+msgstr ""
+
+#: ../confbot.py:888
+msgid "Show: %s"
+msgstr ""
+
+#: ../confbot.py:889
+msgid "Online: %s"
+msgstr ""
+
+#: ../confbot.py:890
+msgid "Sub: %s"
+msgstr ""
+
+#: ../confbot.py:891
+msgid "Name: %s"
+msgstr ""
+
+#: ../confbot.py:892
+msgid "Ask: %s"
+msgstr ""
+
+#: ../confbot.py:905
 #, docstring
 msgid "\"/invite nick\" Invite someone to join this room"
 msgstr ""
 
-#: ../confbot.py:890
+#: ../confbot.py:910
 msgid "Invited <%s>"
 msgstr ""
 
-#: ../confbot.py:895
+#: ../confbot.py:915
 #, docstring
 msgid "\"/mute nick\" Mute someone"
 msgstr ""
 
-#: ../confbot.py:900
+#: ../confbot.py:920
 msgid "<%s> has been unmuted"
 msgstr ""
 
-#: ../confbot.py:901
+#: ../confbot.py:921
 msgid "You have been unmuted by <%s>"
 msgstr ""
 
-#: ../confbot.py:904
+#: ../confbot.py:924
 msgid "<%s> has been muted."
 msgstr ""
 
-#: ../confbot.py:907
+#: ../confbot.py:927
 msgid "<%s> has muted you for %s."
 msgstr ""
 
-#: ../confbot.py:909
+#: ../confbot.py:929
 msgid "<%s> has muted you."
 msgstr ""
 
-#: ../confbot.py:914
+#: ../confbot.py:934
 #, docstring
 msgid "\"/boot\" The same as /kick"
 msgstr ""
 
-#: ../confbot.py:918
+#: ../confbot.py:938
 #, docstring
 msgid "\"/kick nick\" Kick someone out of this room"
 msgstr ""
 
-#: ../confbot.py:929
+#: ../confbot.py:949
 msgid "Booted: <%s>"
 msgstr ""
 
-#: ../confbot.py:932
+#: ../confbot.py:952
 #, docstring
 msgid "\"/ban nick\" Forbid someone rejoin this room"
 msgstr ""
 
-#: ../confbot.py:943
+#: ../confbot.py:963
 msgid "Banned: <%s>"
 msgstr ""
 
-#: ../confbot.py:948
+#: ../confbot.py:968
 #, docstring
 msgid "\"/unban <nick>\" Permit someone rejoin this room"
 msgstr ""
 
-#: ../confbot.py:953
+#: ../confbot.py:973
 msgid "Unbanned: <%s>"
 msgstr ""
 
-#: ../confbot.py:955
+#: ../confbot.py:975
 msgid "%s is not banned"
 msgstr ""
 
-#: ../confbot.py:960
+#: ../confbot.py:980
 #, docstring
 msgid "\"/addadmin <nick>\" Set someone as administrator"
 msgstr ""
 
-#: ../confbot.py:965
+#: ../confbot.py:985
 msgid "Added <%s>"
 msgstr ""
 
-#: ../confbot.py:966
+#: ../confbot.py:986
 msgid "<%s> added you as an admin"
 msgstr ""
 
-#: ../confbot.py:968
+#: ../confbot.py:988
 msgid "You are an admin already."
 msgstr ""
 
-#: ../confbot.py:973
+#: ../confbot.py:993
 #, docstring
 msgid "\"/deladmin <nick>\" Remove admin right from someone"
 msgstr ""
 
-#: ../confbot.py:977
+#: ../confbot.py:997
 msgid "<%s> is a super admin which can not be deleted."
 msgstr ""
 
-#: ../confbot.py:980
+#: ../confbot.py:1000
 msgid "Removed <%s>"
 msgstr ""
 
-#: ../confbot.py:981
+#: ../confbot.py:1001
 msgid "<%s> removed you as an admin"
 msgstr ""
 
-#: ../confbot.py:983
+#: ../confbot.py:1003
 msgid "<%s> is not an admin"
 msgstr ""
 
-#: ../confbot.py:988
+#: ../confbot.py:1008
 #, docstring
 msgid "\"/anick\" Type /anick help for more information."
 msgstr ""
 
-#: ../confbot.py:1010
+#: ../confbot.py:1030
 msgid ""
 "Useage: \"/nick <nickname> <command> [<extra>]\"\n"
 "Commands:\n"
 "unreg(ister) - Unregisters the nickname from the nicklist"
 msgstr ""
 
-#: ../confbot.py:1016
+#: ../confbot.py:1036
 #, docstring
 msgid "\"/status [message]\" Set or see the bot's status"
 msgstr ""
 
-#: ../confbot.py:1022
+#: ../confbot.py:1042
 msgid "Status has been set as: %s"
 msgstr ""
 
-#: ../confbot.py:1024
+#: ../confbot.py:1044
 msgid "Status is: %s"
 msgstr ""
 
-#: ../confbot.py:1027
+#: ../confbot.py:1047
 #, docstring
 msgid "\"/kill [message]\" Close the room"
 msgstr ""
 
-#: ../confbot.py:1030
+#: ../confbot.py:1050
 msgid "Room shutdown by <%s> (%s)"
 msgstr ""
 
-#: ../confbot.py:1032
+#: ../confbot.py:1052
 msgid "Room shutdown by <%s>"
 msgstr ""
 
-#: ../confbot.py:1036
+#: ../confbot.py:1056
 #, docstring
 msgid "\"/refresh\" Update the conference bot website"
 msgstr ""
 
-#: ../confbot.py:1041
+#: ../confbot.py:1061
 msgid "Refreshing the website"
 msgstr ""
 
-#: ../confbot.py:1043
+#: ../confbot.py:1063
 msgid "Refresh already in progress"
 msgstr ""
 
-#: ../confbot.py:1046
+#: ../confbot.py:1066
 #, docstring
 msgid "\"/reload\" Reload the config"
 msgstr ""
 
-#: ../confbot.py:1049
+#: ../confbot.py:1069
 msgid "Bot reloaded."
 msgstr ""
 
-#: ../confbot.py:1057
+#: ../confbot.py:1077
 #, docstring
 msgid "\"/setoption option value\" Set an option's value"
 msgstr ""
 
-#: ../confbot.py:1079
+#: ../confbot.py:1099
 msgid "Success"
 msgstr ""
 
-#: ../confbot.py:1081
+#: ../confbot.py:1101
 msgid "Option [%s] may not exist or can not be set."
 msgstr ""
 
-#: ../confbot.py:1084
+#: ../confbot.py:1104
 #, docstring
 msgid "\"/listoptions\" List all options that can be changed"
 msgstr ""
 
-#: ../confbot.py:1096
+#: ../confbot.py:1116
 msgid ""
 "Options: \n"
 "%s"
 msgstr ""
 
-#: ../confbot.py:1099
+#: ../confbot.py:1119
 #, docstring
 msgid "Same thing as /wordfilter"
 msgstr ""
 
-#: ../confbot.py:1103
+#: ../confbot.py:1123
 #, docstring
 msgid "\"/filter\" Type /wordfilter help for more information."
 msgstr ""
 
-#: ../confbot.py:1109
+#: ../confbot.py:1129
 msgid "You may not filter words with less than 3 letters in them."
 msgstr ""
 
-#: ../confbot.py:1112
+#: ../confbot.py:1132
 msgid "Added %s to the filter list"
 msgstr ""
 
-#: ../confbot.py:1116 ../confbot.py:1122
+#: ../confbot.py:1136 ../confbot.py:1142
 msgid "Deleted %s from the filter list"
 msgstr ""
 
-#: ../confbot.py:1124
+#: ../confbot.py:1144
 msgid "This filter doesn't exist"
 msgstr ""
 
-#: ../confbot.py:1128
+#: ../confbot.py:1148
 msgid "Filtered words will now be masked by %s."
 msgstr ""
 
-#: ../confbot.py:1131
+#: ../confbot.py:1151
 msgid ""
 "Useage: /filter [<command> <filter>]\n"
 "\t\t\tCommands:\n"
@@ -691,112 +720,112 @@ msgid ""
 "\t\t\tMask - Changes the filter mask."
 msgstr ""
 
-#: ../confbot.py:1153
+#: ../confbot.py:1173
 #, docstring
 msgid "\"/qna\" Start a Question and Answer game"
 msgstr ""
 
-#: ../confbot.py:1184
+#: ../confbot.py:1204
 msgid "Currently under construction."
 msgstr ""
 
-#: ../confbot.py:1204
+#: ../confbot.py:1224
 msgid "Use it /spam <nick> <number>"
 msgstr ""
 
-#: ../confbot.py:1257
+#: ../confbot.py:1277
 msgid "Thank you for trying to flood our chat room. Here is some refreshing water for you."
 msgstr ""
 
-#: ../confbot.py:1262
+#: ../confbot.py:1282
 msgid "You are muted and cannot talk."
 msgstr ""
 
-#: ../confbot.py:1288
+#: ../confbot.py:1310
 msgid "%s got the answer to \"%s\" right!"
 msgstr ""
 
-#: ../confbot.py:1296
+#: ../confbot.py:1318
 msgid ""
 "Warning: You are marked as \"busy\" in your client,\n"
 "you will not see other people talk,\n"
 "set yourself \"available\" in your client to see their replies."
 msgstr ""
 
-#: ../confbot.py:1312
+#: ../confbot.py:1334
 msgid "You are banned"
 msgstr ""
 
-#: ../confbot.py:1316
+#: ../confbot.py:1338
 msgid "This is a private conference bot"
 msgstr ""
 
-#: ../confbot.py:1322
+#: ../confbot.py:1344
 msgid "<%s> joins this room."
 msgstr ""
 
-#: ../confbot.py:1335
+#: ../confbot.py:1357
 msgid ""
 "Topic: %(topic)s\n"
 "\t\t\t%(lastlog)s"
 msgstr ""
 
-#: ../confbot.py:1340
+#: ../confbot.py:1362
 msgid "joining"
 msgstr ""
 
-#: ../confbot.py:1340 ../confbot.py:1350
+#: ../confbot.py:1362 ../confbot.py:1372
 msgid "here"
 msgstr ""
 
-#: ../confbot.py:1346
+#: ../confbot.py:1368
 msgid "<%s> has left"
 msgstr ""
 
-#: ../confbot.py:1352 ../confbot.py:1354 ../confbot.py:1358
+#: ../confbot.py:1374 ../confbot.py:1376 ../confbot.py:1380
 msgid "away"
 msgstr ""
 
-#: ../confbot.py:1374
+#: ../confbot.py:1396
 msgid "Feature not implemented"
 msgstr ""
 
-#: ../confbot.py:1384
+#: ../confbot.py:1406
 #, docstring
 msgid "Read an option from the general section of the config, or prompt for it"
 msgstr ""
 
-#: ../confbot.py:1420
+#: ../confbot.py:1442
 msgid "Ready"
 msgstr ""
 
-#: ../confbot.py:1434
+#: ../confbot.py:1456
 msgid "What is the account name of your bot:"
 msgstr ""
 
-#: ../confbot.py:1435
+#: ../confbot.py:1457
 msgid "What is the password of your bot:"
 msgstr ""
 
-#: ../confbot.py:1436
+#: ../confbot.py:1458
 msgid "Write a short description about your bot:"
 msgstr ""
 
-#: ../confbot.py:1447
+#: ../confbot.py:1469
 msgid "Input super admin email account:"
-msgstr ""
-
-#: ../confbot.py:1458
-#, docstring
-msgid "Saves the config to disk"
 msgstr ""
 
 #: ../confbot.py:1480
 #, docstring
+msgid "Saves the config to disk"
+msgstr ""
+
+#: ../confbot.py:1502
+#, docstring
 msgid "Saves the nicklist to disk"
 msgstr ""
 
-#: ../confbot.py:1495
+#: ../confbot.py:1517
 #, docstring
 msgid "Saves the Games to disk"
 msgstr ""
