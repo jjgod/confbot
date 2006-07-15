@@ -59,12 +59,16 @@ def getlocale():
 i18n.install('confbot', 'locale', getlocale())
 
 statcheck = 0
-
 conf = None	#global config object
 userinfo = None
 nick = None
 games = None
 qu = an = ra = None
+
+#Various Global Variables
+msgname = None
+silent = None
+
 welcome = _("""Welcome to ConferenceBot %(version)s
 By Isomer (Perry Lorier) and Limodou
 This conference bot is set up to allow groups of people to chat.
@@ -338,15 +342,15 @@ def sendtoone(who, msg):
 	
 
 def sendtoall(msg,butnot=[],including=[], status = None):
-	global lastlog
+	global lastlog, msgname
 	r = con.getRoster()
 	print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode("utf-8")
 	logf.flush()
 	if conf.general.debug:
-			try:
+			if msgname:
 				print time.strftime("%Y-%m-%d %H:%M:%S"), "<",msgname,">", msg.encode(locale.getdefaultlocale()[1],'replace')
-			except:
-				print time.strftime("%Y-%m-%d %H:%M:%S"), "<",msgname,">", msg.encode("utf-8")
+			else:
+				print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode(locale.getdefaultlocale()[1])
 	for i in r.getJIDs():
 		#print i, uset.mutechange.get(i)
 		#away represents users that don't want to chat
@@ -356,11 +360,16 @@ def sendtoall(msg,butnot=[],including=[], status = None):
 		#	continue
 		state=r.isOnline(i)
 		if r.isOnline(i) and r.getShow(i) in ['available','chat','online',None]:
-			if re.compile('msn\.jabber').search(getjid(i)):
-				sendtoone(i, '%s says:' % (msgname))
-				sendtoone(i, '   %s' % (msg))
+			if msgname:
+				if re.compile('msn\.jabber').search(getjid(i)):
+					sendtoone(i, '%s says:' % (msgname))
+					sendtoone(i, '   %s' % (msg))
+				else:
+					sendtoone(i, '<%s> %s' % (msgname,msg))
 			else:
-				sendtoone(i, '<%s> %s' % (msgname,msg))
+				sendtoone(i,msg)
+
+	msgname = None
 	if not msg.startswith(conf.general['sysprompt']):
 		lastlog.append(msg)
 	if len(lastlog)>5:
@@ -748,6 +757,8 @@ def cmd_quit(who, msg):
 def cmd_away(who, msg):
 	'"/away [message]" Set "away"(need message) or "chat"(no message) flag of someone' 
 	msg = msg.strip().lower()
+	if 'silent' in msg:
+		add_userflag(who, 'silent')
 	if msg or not has_userflag(who.getStripped(), 'away'):
 		cmd_nochat(who, msg)
 	else:
@@ -758,14 +769,15 @@ def cmd_nochat(who, msg):
 	add_userflag(who.getStripped(), 'away')
 	if msg:
 		msg = "(%s)" % msg
-	systoall(_('%s is temporarily away. %s').para(getdisplayname(who), msg), [who])
+	if not has_userflag(who, 'silent'):
+		systoall(_('%s is temporarily away. %s').para(getdisplayname(who), msg), [who])
 	systoone(who, _('Warning: Because you set "away" flag, so you can not receive and send any message from this bot, until you reset using "/away" or "/chat" command or just send a message to the chatroom.')) 
 	
 def cmd_chat(who, msg):
 	'"/chat" Remove "away" flag of someone, just like "/away"'
-	if has_userflag(who.getStripped(), 'away'):
-		del_userflag(who.getStripped(), 'away')
-		systoall(_('%s is actively interested in chatting.').para(getdisplayname(who)), [who])
+	if del_userflag(who.getStripped(), 'away'):
+		if not del_userflag(who, 'silent'):
+			systoall(_('%s is actively interested in chatting.').para(getdisplayname(who)), [who])
 		systoone(who, _('You can begin to chat now.'))
 	else:
 		systoone(who, _('You didn\'t set _away_ flag.'))
@@ -1291,11 +1303,10 @@ def messageCB(con,msg):
 				#systoone(msg.getFrom().getStripped(), _('Warning: Because you set "away" flag, so you can not receive and send any message from this bot, until you reset using "/away" command'))
 				#xmllogf.flush()
 				#return
-			global suppressing,last_activity
+			global suppressing,last_activity,msgname
 			suppressing=0
 			last_activity=time.time()
 			msgfilter = re.sub(wordfilter,conf.general.get('filtermask'), msg.getBody())
-			global msgname
 			msgname = getdisplayname(whoid)
 			sendtoall('%s' % (msgfilter),
 				butnot=[getdisplayname(msg.getFrom())],
