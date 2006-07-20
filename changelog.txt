@@ -2,6 +2,19 @@ NOTICE: Remember that this is the Trunk version (No, there is no Stable, yet) so
 
 For change logs from 09/05 (when it was originally being worked on), look towards the end of the file.
 
+2006/07/19
+	[Fixed]
+	-/kick and /ban for a change I had made but never reverted.
+	
+	-Logging now properly logs the <timestamp> <Nickname> <Message>
+	
+2006/07/17
+	[Updated]
+	-/status no longer puts the status in lower case.
+	
+	-/nick now encodes nicknames with strange characters in them into utf7.
+		Note: They still don't get decoded properly, so don't try it just yet.
+
 2006/07/14
 	[Updated]
 	-Now as long as there is the word "silent" anywhere after /away it will

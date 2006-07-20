@@ -94,7 +94,10 @@ class RECONNECT_COMMAND(Exception):pass
 def getdisplayname(x):
 	"Converts a user@domain/resource to a displayable nick"
 	server = conf.general['server']
-	x=unicode(x)
+	try:
+		x = unicode(x.decode("utf7"))
+	except:
+		x = unicode(x)
 	if '/' in x:
 		x = x[:x.find("/")]
 	if hasnick(x):
@@ -102,7 +105,7 @@ def getdisplayname(x):
 		x = x.capitalize()
 		if issuper(getjid(x)):
 			x = '_'+ x +'_'
-	if '%' in x and '@msn' in x[x.find('%'):]:
+	if '%' in x and 'msn.jabber' in x[x.find('%'):]:
 		x = x[:x.find('%')]
 	if '@' in x and x[x.find('@'):] == "@" + server:
 		x = x[:x.find("@")]
@@ -344,11 +347,14 @@ def sendtoone(who, msg):
 def sendtoall(msg,butnot=[],including=[], status = None):
 	global lastlog, msgname
 	r = con.getRoster()
-	print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode("utf-8")
+	if msgname:
+		print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), "<", msgname, ">", msg.encode("utf-8")
+	else:
+		print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode("utf-8")
 	logf.flush()
 	if conf.general.debug:
 			if msgname:
-				print time.strftime("%Y-%m-%d %H:%M:%S"), "<",msgname,">", msg.encode(locale.getdefaultlocale()[1],'replace')
+				print time.strftime("%Y-%m-%d %H:%M:%S"), "<", msgname, ">", msg.encode(locale.getdefaultlocale()[1],'replace')
 			else:
 				print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode(locale.getdefaultlocale()[1])
 	for i in r.getJIDs():
@@ -498,9 +504,9 @@ def cmd_nick(who, msg):
 		msg = msg.strip('_*').lower() #Limits the abuse of capitals and makes it harder to steal names.
 	#= Must be here or nicklist.ini will get corrupted if it encounters an unknown character.
 	try:
-		msg = msg.encode(locale.getdefaultlocale()[1],'replace')
+		msg = msg.encode(locale.getdefaultlocale()[1])
 	except:
-		msg = msg.encode("utf-8")
+		msg = msg.encode("utf7")
 	nickname = wid = who.getStripped()
 	nickconf = nick['nickname']
 	nicknow = None
@@ -819,7 +825,7 @@ def cmd_version(who, msg):
 	
 def cmd_die(who, msg):
 	'"/die" rolls a random number'
-	systoall(_('%s rolls a %s').para(getdisplayname(who,1),random.randrange(1,7)))
+	systoall(_('%s rolls a %s').para(getdisplayname(who),random.randrange(1,7)))
 
 def cmd_dice(who, msg, j = 0, i = 0, dice = 1):
 	'"/dice [<number of dice>] [<number of sides>]" rolls a random number'
@@ -841,7 +847,7 @@ def cmd_dice(who, msg, j = 0, i = 0, dice = 1):
 						while int(j) < int(dice) and int(j) < 20:
 							j = int(j) + 1
 							i = i + random.randrange(1,int(msg))
-						systoall(_('%s rolls %s with %s %s-sided dice').para(getdisplayname(who,1),i,j,msg))
+						systoall(_('%s rolls %s with %s %s-sided dice').para(getdisplayname(who),i,j,msg))
 								
 				else:
 					raise MSG_COMMAND
@@ -853,7 +859,7 @@ def cmd_dice(who, msg, j = 0, i = 0, dice = 1):
 					while int(j) < int(msg) and int(j) < 20:
 						j = int(j) + 1
 						i = i + random.randrange(1,7)
-					systoall(_('%s rolls %s with %s dice').para(getdisplayname(who,1),i,j))
+					systoall(_('%s rolls %s with %s dice').para(getdisplayname(who),i,j))
 	
 	else:
 		raise MSG_COMMAND
@@ -958,7 +964,7 @@ def acmd_kick(who, msg):
 			boot(jid)
 			del userinfo[jid]
 			saveconfig()
-			systoall(_('Booted: <%s>').para(getdisplayname(jid,1)))
+			systoall(_('Booted: <%s>').para(getdisplayname(jid)))
 
 def acmd_ban(who, msg):
 	'"/ban nick" Forbid someone rejoin this room'
@@ -972,7 +978,7 @@ def acmd_ban(who, msg):
 			if userinfo.has_key(jid):
 				boot(jid)
 			addban(msg)
-			systoall(_('Banned: <%s>').para(getdisplayname(msg,1)))
+			systoall(_('Banned: <%s>').para(getdisplayname(msg)))
 	else:
 		raise MSG_COMMAND
 
@@ -1046,7 +1052,7 @@ def acmd_anick(who,msg):
 #=================================
 def acmd_status(who, msg):
 	'"/status [message]" Set or see the bot\'s status'
-	msg = msg.strip().lower()
+	msg = msg.strip()
 	if msg:
 		conf.general['status'] = msg
 		saveconfig()
@@ -1631,7 +1637,7 @@ general = conf.general
 #logfile process
 if not os.path.isdir(general['logpath']) and not general['logpath'] == '':
 	os.mkdir(general['logpath'])
-	print "ALERT: Directory doesn't exist, making folder \""+ general['logpath'] +"\""
+	print "ALERT: Log directory doesn't exist, making folder \""+ general['logpath'] +"\""
 logf = file(os.path.join(general['logpath'], time.strftime(general['logfileformat']) + '.log'), "a+")
 
 con = None
