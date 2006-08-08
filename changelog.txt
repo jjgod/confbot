@@ -10,10 +10,15 @@ For change logs from 09/05 (when it was originally being worked on), look toward
 		
 		Also Note: Hawkchat is still in it's beta stages and will
 		only respond to "Hawk:" Leave 
-
+		
+		Again Note: Most of hawkchat is in hawkchat.py and at the end
+		of messageCB with the message modifiers.
+		
 	[Fixed]
 	-/quit now properly removes a user from the bot.
 		Changed: getdisplayname to getcleanname in "boot".
+		
+	-syntax error in the function hawkchat()
 
 2006/07/30
 	[Updated]

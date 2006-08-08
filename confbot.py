@@ -1679,7 +1679,8 @@ saveall()
 wordfilter = cuss_list()
 
 def hawkchat(input):
-	if reply = chatReply(input):
+	reply = chatReply(input)
+	if reply:
 		sendtoall("<Hawk> "+ reply)
 	return
 	
