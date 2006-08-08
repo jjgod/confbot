@@ -36,6 +36,7 @@ import re
 
 commandchrs = '/)'
 
+from hawkchat import *
 from dict4ini import DictIni
 
 def getlocale():
@@ -59,17 +60,18 @@ def getlocale():
 i18n.install('confbot', 'locale', getlocale())
 
 statcheck = 0
-conf = None	#global config object
+#global config object
+conf = None	
 userinfo = None
 nick = None
 games = None
-qu = an = ra = None
 
 #Various Global Variables
 msgname = None
 silent = None
+qu = an = ra = None
 
-welcome = _("""Welcome to ConferenceBot %(version)s
+welcome = _("""Welcome to ConferenceBot %(revision)d
 By Isomer (Perry Lorier) and Limodou
 This conference bot is set up to allow groups of people to chat.
 ")help" to list commands, ")quit" to quit
@@ -87,6 +89,9 @@ class CUSS_COMMAND(Exception):pass
 class NOMAN_COMMAND(Exception):pass
 class RECONNECT_COMMAND(Exception):pass
 
+#Define array with all the words in lines.txt
+global chatarray, chatlines
+chatarray, chatlines = parseLineFile('lines.txt')
 
 #==================================================
 #=         String Tools                           =
@@ -146,7 +151,7 @@ def cuss_list():
 	#print j
 	j = re.sub('\s','|',j)
 	#print j
-	j = '(?i)(' + j + ')+'
+	j = '(?i)\\b(' + j + ')+\\b'
 	return j
 
 def find_cuss(msg):
@@ -315,10 +320,9 @@ def ismuted(jid):  	return has_userflag(jid,"muted")
 def delmute(jid):	return del_userflag(jid,"muted")
 def addmute(jid):	return add_userflag(jid,"muted")
 def isbusy(jid):	return check_status(jid)
-def iscamo(jid):	return has_userflag(jid, "camo")
 
 def addfilter(flag):	return add_flag('wordfilter', flag)
-def getcuss(msg):	return cuss_list(msg)
+def getcuss():	return cuss_list()
 def iscuss(msg):	return find_cuss(msg)
 def hasnick(jid):	return check_nick(jid)
 
@@ -367,9 +371,9 @@ def sendtoall(msg,butnot=[],including=[], status = None):
 		state=r.isOnline(i)
 		if r.isOnline(i) and r.getShow(i) in ['available','chat','online',None]:
 			if msgname:
-				if re.compile('msn\.jabber').search(getjid(i)):
-					sendtoone(i, '%s says:' % (msgname))
-					sendtoone(i, '   %s' % (msg))
+				if re.compile('msn\.jabber').search(getjid(i)) and not has_userflag(i, 'nomsn'):
+					sendtoone(i, '%s says:\n	%s' % (msgname, msg))
+					#sendtoone(i, '   %s' % (msg))
 				else:
 					sendtoone(i, '<%s> %s' % (msgname,msg))
 			else:
@@ -445,8 +449,11 @@ def boot(jid):
 	"Remove a user from the chatroom"
 	con.send(jabber.Presence(to=jid, type='unsubscribe'))
 	con.send(jabber.Presence(to=jid, type='unsubscribed'))
-	if statuses.has_key(getdisplayname(jid)):
-		del statuses[getdisplayname(jid)]
+	if statuses.has_key(getcleanname(jid)):
+		del statuses[getcleanname(jid)]
+	if userinfo[jid]:
+		del userinfo[jid]
+		saveconfig()
 #	con.removeRosterItem(jid)
 
 #=====================================================
@@ -501,7 +508,7 @@ def cmd_nick(who, msg):
 	if issadmin(who.getStripped()):
 		msg = msg.strip().lower()
 	else:
-		msg = msg.strip('_*').lower() #Limits the abuse of capitals and makes it harder to steal names.
+		msg = re.sub('[^A-Za-z_0-9 \']+','', msg).lower() #Limits the abuse of capitals and makes it harder to steal names.
 	#= Must be here or nicklist.ini will get corrupted if it encounters an unknown character.
 	try:
 		msg = msg.encode(locale.getdefaultlocale()[1])
@@ -632,26 +639,38 @@ def cmd_names(who, msg):
 	'"/names" List all the people in the room'
 	r = con.getRoster()
 	names = []
+	admins = 0
+	online = 0
+	offline = 0
+	away = 0
+	busy = 0
 	for i in r.getJIDs():
 		if '@' not in unicode(i):
 			continue
 		state = r.getOnline(unicode(i))
 		name = getdisplayname(i)
-		if issuper(i.getStripped()):
-			name = "@%s" % name
-		if isadmin(i.getStripped()):
-			name = "%"+"%s" % name
-		if has_userflag(i.getStripped(), 'away'):
-			name = "-%s" % name
 		if has_userflag(i.getStripped(), 'banned'):
-			name = "#%s" % name
-		if isbusy(i.getStripped()):
-			name = "!%s" % name
+				name = "#%s" % name
+				continue #We don't care about banned people's status
 		if state in ['available','chat','online',None]:
+			if issuper(i.getStripped()):
+				name = "@%s" % name
+				admins += 1
+			if isadmin(i.getStripped()):
+				name = "%"+"%s" % name
+				admins += 1
+			if has_userflag(i.getStripped(), 'away'):
+				name = "-%s" % name
+				away += 1
+			elif isbusy(i.getStripped()):
+				name = "!%s" % name
+				busy += 1
 			names.insert(0,name)
+			online += 1
 		else:
 			names.append('(%s)' % name)
-	systoone(who, _('Names: total (%d)\n%s').para(len(names), " ".join(names)))
+			offline = offline + 1
+	systoone(who, _('Names:\nOnline | Offline:(%d/%d)\nAway | Busy:(%d/%d)\n Total (%d)\n%s').para(online, offline, away, busy, len(names), " ".join(names)))
 	
 def cmd_msg(who, msg):
 	'"/msg nick message" Send a private message to someone'
@@ -677,7 +696,7 @@ def cmd_msg(who, msg):
 #===================================
 #=         Option Commands         =
 #===================================
-usettings = ['mutechange']
+usettings = ['mutechange', 'mesformat']
 def cmd_settings(who, msg):
 	'Type /settings help for more information.'
 	msg = msg.strip().lower()
@@ -731,6 +750,18 @@ def cmd_lang(who, msg):
 def cmd_listlangs(who, msg):
 	'"/listlangs" List all support language'
 	systoone(who, _('Available languages: %s').para(' '.join(i18n.listlang())))
+
+def cmd_msgform(who, msg):
+	'Toggle MSN message format, doesn\'t affect anyone but MSN users.'
+	if re.compile('msn\.jabber').search(getjid(who)):
+		if del_userflag(who,'nomsn'):
+			systoone(who, _('Message Format = <Username> Says:\n<Message>'))
+		else:
+			add_userflag(who, 'nomsn')
+			systoone(who, _('Message Format = <Username> <Message>'))
+	else:
+		raise MSG_COMMAND
+
 	
 def cmd_vcard(who, msg):
 	'"/vcard" usage: /vcard full name**personal quote**website address. ** is the field seperator.'
@@ -753,10 +784,10 @@ def cmd_exit(who, msg):
 	cmd_quit(who, msg)
 
 def cmd_quit(who, msg):
-	'"/quit" Quit this room for ever'
+	'"/quit [message]" Quit this room forever'
 	if msg:
 		msg = "(%s)" % msg
-	systoall(_('Quit: <%s> %s').para(getdisplayname(who)),msg)
+	systoall(_('Quit: <%s> %s').para(getdisplayname(who),msg))
 	if not issuper(who):
 		boot(who.getStripped())
 
@@ -933,18 +964,18 @@ def acmd_mute(who, msg):
 	'"/mute nick" Mute someone'
 	jid = getjid(msg.strip().lower())
 	if msg:
-		if ismuted(jid):
-			delmute(jid)
-			systoone(who, _('<%s> has been unmuted').para(getdisplayname(jid)))
+		if delmute(jid):
+			systoall(_('<%s> has been unmuted').para(getdisplayname(jid)))
 			systoone(jid, _('You have been unmuted by <%s>').para(getdisplayname(who)))
 		elif not issadmin(jid) and not who == jid:
 			addmute(jid)
-			systoone(who, _('<%s> has been muted.').para(getdisplayname(jid)))
+			systoall(_('<%s> has been muted.').para(getdisplayname(jid)))
 			if ' ' in msg:
 				mutee, msg = msg.split(' ',1)
-				systoone(jid, _('<%s> has muted you for %s.').para(getdisplayname(who,1), msg))
+				systoone(jid, _('<%s> has muted you for %s.').para(getdisplayname(who), msg))
 			else:
-				systoone(jid, _('<%s> has muted you.').para(getdisplayname(who,1)))
+				systoone(jid, _('<%s> has muted you.').para(getdisplayname(who)))
+		saveconfig()
 	else:
 		raise MSG_COMMAND	
 	
@@ -956,14 +987,12 @@ def acmd_kick(who, msg):
 	'"/kick nick" Kick someone out of this room'
 	jid = getjid(msg.strip().lower())
 	if isadmin(who.getStripped()) and issuper(jid):
-		act = "kick"
-		print time.strftime("%Y-%m-%d %H:%M:%S"), getjid(who), "has tried to", act,"the Super Admin", jid
 		raise TOOLOW_COMMAND
 	else:		
 		if userinfo.has_key(jid):
 			boot(jid)
-			del userinfo[jid]
-			saveconfig()
+			#del userinfo[jid]
+			#saveconfig()
 			systoall(_('Booted: <%s>').para(getdisplayname(jid)))
 
 def acmd_ban(who, msg):
@@ -1001,7 +1030,7 @@ def acmd_addadmin(who, msg):
 		if who.getStripped() != jid:
 			addadmin(jid)
 			systoone(who, _('Added <%s>').para(jid))
-			systoone(jid, _('<%s> added you as an admin').para(getdisplayname(who,1)))
+			systoone(jid, _('<%s> added you as an admin').para(getdisplayname(who)))
 		else:
 			systoone(who, _('You are an admin already.'))
 	else:
@@ -1016,7 +1045,7 @@ def acmd_deladmin(who, msg):
 		else:
 			if deladmin(jid):
 				systoone(who, _('Removed <%s>').para(jid))
-				systoone(getjid(msg), _('<%s> removed you as an admin').para(getdisplayname(who,1)))
+				systoone(getjid(msg), _('<%s> removed you as an admin').para(getdisplayname(who)))
 			else:
 				systoone(who, _('<%s> is not an admin').para(jid))
 	else:
@@ -1084,6 +1113,7 @@ def acmd_reload(who, msg):
 	'"/reload" Reload the config'
 	readall()
 	wordfilter = cuss_list()
+	chatarray, chatlines = parseLineFile('lines.txt')
 	systoone(who, _('Bot reloaded.'))
 
 		
@@ -1313,13 +1343,36 @@ def messageCB(con,msg):
 			suppressing=0
 			last_activity=time.time()
 			msgfilter = re.sub(wordfilter,conf.general.get('filtermask'), msg.getBody())
+			#if re.match('\*.*\*', msgfilter):
+			#	re.sub('.*\*.*','',msgfilter)
+			#	cmd_me(whoid, msgfilter)
+			#else:
 			msgname = getdisplayname(whoid)
 			sendtoall('%s' % (msgfilter),
-				butnot=[getdisplayname(msg.getFrom())],
-				)
+					butnot=[getdisplayname(msg.getFrom())],
+					)
 			
 			#==================
 			#= Extra Message Handlers
+			hawkchat = conf.hawkchat
+			if hawkchat.replyrate > 0 and msgfilter.lower().startswith('hawk:'):
+				hawkchat(msgfilter)
+				
+			if conf.hawkchat.learn == 1:
+				if len(msgfilter.split()) >= hawkchat.sentencelen:
+					chatline = msgfilter + "\n"
+					chatline = re.sub('Hawk: ','', chatline)
+					f = file('lines.txt', 'a+')
+					for line in f:
+						if chatline == line:
+							chatline = None
+					if chatline:
+						f.write(chatline)
+						#Add the new line into the chatarray.
+						chatarray.append(parseLine(chatline))
+						chatlines.append(chatline)
+					f.close()
+			
 			if os.path.getsize("Games.ini") != 0:
 				global ra
 				if ra:
@@ -1370,8 +1423,8 @@ def presenceCB(con,prs):
 			wel = welcome.getvalue()
 		else:
 			wel = welcome
-		systoone(who, wel % {'revision':revision})
-		systoone(who, _('''Topic: %(topic)s
+		systoone(whoid, wel % {'revision':revision})
+		systoone(whoid, _('''Topic: %(topic)s
 			%(lastlog)s''').para({
 			"topic" : conf.general['topic'],
 			"lastlog" : "\n".join(lastlog),
@@ -1461,6 +1514,14 @@ def readconfig():
 	conf.general.maxnicklen = 10
 	conf.general.floodback = 0
 	conf.general.wordfilter = 'fuc*k','shit','damn','mofo','nigger',
+	
+	#=====================
+	#= Hawk Chat Config
+	conf.hawkchat.replyrate = 0
+	conf.hawkchat.learn = 0
+	conf.hawkchat.sentencelen = 1
+	conf.hawkchat.callname = "Hawk"
+	
 	
 	if len(sys.argv)>1:
 		conf.setfilename(sys.argv[1])
@@ -1617,6 +1678,11 @@ readall()
 saveall()
 wordfilter = cuss_list()
 
+def hawkchat(input):
+	if reply = chatReply(input):
+		sendtoall("<Hawk> "+ reply)
+	return
+	
 #set system default encoding to support unicode
 reload(sys)
 sys.setdefaultencoding('utf-8')

@@ -2,6 +2,42 @@ NOTICE: Remember that this is the Trunk version (No, there is no Stable, yet) so
 
 For change logs from 09/05 (when it was originally being worked on), look towards the end of the file.
 
+2006/08/08
+	[Added]
+	-Hawkchat feature, which is a learning chatbot.
+		Note: Main development is in English so it will be smartest
+		if spoken to in English.
+		
+		Also Note: Hawkchat is still in it's beta stages and will
+		only respond to "Hawk:" Leave 
+
+	[Fixed]
+	-/quit now properly removes a user from the bot.
+		Changed: getdisplayname to getcleanname in "boot".
+
+2006/07/30
+	[Updated]
+	-The message filter now does a better job at filtering.
+		Note: It won't filter between words but it still needs work.
+	
+	[Fixed]
+	-/mute now sends a message to everyone about the muted user.
+
+2006/07/27
+	[Added]
+	-MSN Users can now use /msgform to toggle the message format from 
+		"<Username> Says:
+			<Message>"
+		to
+		"<Username> <Message>"
+		
+	[Updated]
+	-/names shows number of online, offline, and away, with the total
+	
+	[Fixed]
+	-A typo in the default welcome message that was causing errors
+		when a user joined the bot.
+
 2006/07/19
 	[Fixed]
 	-/kick and /ban for a change I had made but never reverted.
