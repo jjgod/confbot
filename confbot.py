@@ -312,7 +312,7 @@ def get_vcs_version():
 
 def check_status(jid):
     if con.getRoster().getShow(jid) not in ['available','chat','online',None]:
-        return 1
+        return 0
     return 0
     
 def check_nick(jid):
@@ -360,7 +360,7 @@ def sendtoone(who, msg):
     #   time.sleep(.1)
     
 
-def sendtoall(msg,butnot=[],including=[], status = None):
+def sendtoall(msg, butnot=[], including=[], status = None):
     global lastlog, msgname
     r = con.getRoster()
     if msgname:
@@ -380,16 +380,16 @@ def sendtoall(msg,butnot=[],including=[], status = None):
             continue
         #if status == 1 and uset.mutechange[i] == 1:
         #   continue
-        state=r.isOnline(i)
+        state = r.isOnline(i)
         if r.isOnline(i) and r.getShow(i) in ['available','chat','online',None]:
             if msgname:
                 if re.compile('msn\.jabber').search(getjid(i)) and not has_userflag(i, 'nomsn'):
                     sendtoone(i, '%s says:\n    %s' % (msgname, msg))
                     #sendtoone(i, '   %s' % (msg))
                 else:
-                    sendtoone(i, '<%s> %s' % (msgname,msg))
+                    sendtoone(i, '<%s> %s' % (msgname, msg))
             else:
-                sendtoone(i,msg)
+                sendtoone(i, msg)
 
     msgname = None
     if not msg.startswith(conf.general['sysprompt']):
