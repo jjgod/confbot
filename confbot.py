@@ -376,12 +376,12 @@ def sendtoall(msg, butnot=[], including=[], status = None):
     for i in r.getJIDs():
         #print i, uset.mutechange.get(i)
         #away represents users that don't want to chat
-        if getdisplayname(i) in butnot or has_userflag(getcleanname(i), 'away'): 
+        if getdisplayname(i) in butnot:
             continue
         #if status == 1 and uset.mutechange[i] == 1:
         #   continue
         state = r.isOnline(i)
-        if r.isOnline(i) and r.getShow(i) in ['available','chat','online',None]:
+        if r.isOnline(i):
             if msgname:
                 if re.compile('msn\.jabber').search(getjid(i)) and not has_userflag(i, 'nomsn'):
                     sendtoone(i, '%s says:\n    %s' % (msgname, msg))
@@ -1396,8 +1396,6 @@ def messageCB(con,msg):
                         games['QnA Scores'][whoid] = score
                         ra = None
                         saveGames()
-            if isbusy(msg.getFrom().getStripped()):
-                systoone(msg.getFrom(), _('Warning: You are marked as "busy" in your client,\nyou will not see other people talk,\nset yourself "available" in your client to see their replies.'))
     xmllogf.flush() # just so flushes happen regularly
 
 
