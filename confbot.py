@@ -142,24 +142,6 @@ def getjid(x):
             x = x + "@" + server
         return x
 
-def cuss_list():
-    "Returns a formated Regex"
-    readconfig()
-    #print conf.general.get("wordfilter")
-    j = convert_seq(conf.general.get("wordfilter"), y = 1)
-    #print j
-    j = j.strip()
-    #print j
-    j = re.sub('\s','|',j)
-    #print j
-    j = '(?i)\\b(' + j + ')+\\b'
-    return j
-
-def find_cuss(msg):
-    if re.search(wordfilter, msg):
-        return 1
-    return 0
-    
 def convert_seq(seq, y = None):
 #======================
 #= y = 1 sets the string up for the langauge filter.
@@ -333,9 +315,6 @@ def delmute(jid):   return del_userflag(jid,"muted")
 def addmute(jid):   return add_userflag(jid,"muted")
 def isbusy(jid):    return check_status(jid)
 
-def addfilter(flag):    return add_flag('wordfilter', flag)
-def getcuss():  return cuss_list()
-def iscuss(msg):    return find_cuss(msg)
 def hasnick(jid):   return check_nick(jid)
 
 def isuser(jid):    return has_userflag(jid,"user")
@@ -376,7 +355,7 @@ def sendtoall(msg, butnot=[], including=[], status = None):
     for i in r.getJIDs():
         #print i, uset.mutechange.get(i)
         #away represents users that don't want to chat
-        if getdisplayname(i) in butnot:
+        if getdisplayname(i) in butnot or has_userflag(getcleanname(i), 'away'):
             continue
         #if status == 1 and uset.mutechange[i] == 1:
         #   continue
@@ -483,8 +462,6 @@ def cmd(who,msg):
     func = None
     try:
         if commands.has_key(cmd):
-            if iscuss(msg):
-                raise CUSS_COMMAND
             func = commands[cmd]
             func(who, msg)
         elif acommands.has_key(cmd):
@@ -497,12 +474,8 @@ def cmd(who,msg):
             systoone(who, _('Unknown command "%s".').para(cmd))
     except ADMIN_COMMAND:
         systoone(who, _('This is admin command. You are _*not*_ an admin.'))
-    except CUSS_COMMAND:
-        systoone(who, _('Please refrain from the use of foul language.'))
     except TOOLOW_COMMAND:
         systoone(who, _('You cannot use this command against a Super Admin.'))
-    except CUSS_COMMAND:
-        systoone(who, _('Please refrain from the use of foul language.'))
     except MSG_COMMAND:
         f = _
         systoone(who, f(func.__doc__))
@@ -927,11 +900,6 @@ def cmd_getemail(who, x):
     else:
         raise MSG_COMMAND
 
-def cmd_filterlist(who, msg):
-        'Displays a list of filtered words.'
-        filter = convert_seq(conf.general.get("wordfilter"), y = 2)
-        systoone(who, _('The words currently filtered are:\n%s').para(filter))
-
 def cmd_info(who, msg):
     'Useage: /info <nickname>'
     if msg:
@@ -1124,7 +1092,6 @@ def acmd_refresh(who, msg):
 def acmd_reload(who, msg):
     '"/reload" Reload the config'
     readall()
-    wordfilter = cuss_list()
     chatarray, chatlines = parseLineFile('lines.txt')
     systoone(who, _('Bot reloaded.'))
 
@@ -1132,7 +1099,7 @@ def acmd_reload(who, msg):
 #===============================
 #=         DB Commands         =
 #===============================
-options = ['language', 'private', 'hide_status', 'debug', 'topic', 'sysprompt', 'logfileformat', 'status', 'maxnicklen', 'filtermask', 'floodback']
+options = ['language', 'private', 'hide_status', 'debug', 'topic', 'sysprompt', 'logfileformat', 'status', 'maxnicklen', 'floodback']
 def acmd_setoption(who, msg):
     '"/setoption option value" Set an option\'s value'
     msg = msg.strip().lower()
@@ -1175,57 +1142,6 @@ def acmd_listoptions(who, msg):
         txt.append("%s : %s" % (option, value))
     systoone(who, _('Options: \n%s').para('\n'.join(txt)))
 
-def acmd_filter(who, msg):
-    'Same thing as /wordfilter'
-    acmd_wordfilter(who, msg)
-        
-def acmd_wordfilter(who, msg):
-    '"/filter" Type /wordfilter help for more information.'
-    if issadmin(who.getStripped()):
-        if ' ' in msg:
-            cmd, msg = msg.split(' ', 1)
-            if cmd == 'add':
-                if len(msg) < 3:
-                    systoone(who, _('You may not filter words with less than 3 letters in them.'))
-                else:
-                    addfilter(msg)
-                    systoone(who, _('Added %s to the filter list').para(msg))
-            
-            elif cmd in ('del','delete','remove'):
-                if del_flag('wordfilter',msg):
-                    systoone(who, _('Deleted %s from the filter list').para(msg))
-                    
-                #==================
-                #= Checks for filters with u"" around them.
-                else:
-                    if del_flag('wordfilter','u"' + msg + '"'):
-                        systoone(who, _('Deleted %s from the filter list').para(msg))
-                    else:
-                        systoone(who, _('This filter doesn\'t exist'))
-                        
-            elif cmd in ('filter', 'mask'):
-                conf.general['filtermask'] = msg
-                systoone(who, _('Filtered words will now be masked by %s.').para(msg))
-            
-        elif msg == 'help':
-            systoone(who, _('''Useage: /filter [<command> <filter>]
-            Commands:
-            /filter - Displays the list of currently filtered words.
-            Add - Adds a filter ot the list.
-            Del - Deletes a filter from the list.
-            Mask - Changes the filter mask.'''))
-        
-        else:
-            filter = convert_seq(conf.general.get("wordfilter"), y = 2)
-            systoone(who, _('The words currently filtered are:\n%s').para(filter))
-    else:
-        filter = convert_seq(conf.general.get("wordfilter"), y = 2)
-        systoone(who, _('The words currently filtered are:\n%s').para(filter))
-
-    readconfig()
-    saveconfig()
-    wordfilter = cuss_list()
-        
 #=================================
 #=         Misc Commands         =
 #=================================
@@ -1354,22 +1270,21 @@ def messageCB(con,msg):
             global suppressing,last_activity,msgname
             suppressing=0
             last_activity=time.time()
-            msgfilter = re.sub(wordfilter,conf.general.get('filtermask'), msg.getBody())
+            msgfilter = msg.getBody()
             #if re.match('\*.*\*', msgfilter):
             #   re.sub('.*\*.*','',msgfilter)
             #   cmd_me(whoid, msgfilter)
             #else:
             msgname = getdisplayname(whoid)
             sendtoall('%s' % (msgfilter),
-                    butnot=[getdisplayname(msg.getFrom())],
-                    )
+                    butnot=[getdisplayname(msg.getFrom())],)
             
             #==================
             #= Extra Message Handlers
             hawkchat = conf.hawkchat
             if hawkchat.replyrate > 0 and msgfilter.lower().startswith('hawk:'):
                 hawkchat(msgfilter)
-                
+
             if conf.hawkchat.learn == 1:
                 if len(msgfilter.split()) >= hawkchat.sentencelen:
                     chatline = msgfilter + "\n"
@@ -1520,10 +1435,8 @@ def readconfig():
     conf.general.language = ''
     conf.general.logfileformat = '%Y%m%d'
     conf.general.status = _('Ready')
-    conf.general.filtermask = '<Censored>'
     conf.general.maxnicklen = 10
     conf.general.floodback = 0
-    conf.general.wordfilter = 'fuc*k','shit','damn','mofo','nigger',
     
     #=====================
     #= Hawk Chat Config
@@ -1686,7 +1599,6 @@ def register_site():
     
 readall()
 saveall()
-wordfilter = cuss_list()
 
 def hawkchat(input):
     reply = chatReply(input)
