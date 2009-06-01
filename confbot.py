@@ -330,15 +330,13 @@ def sendtoone(who, msg):
         msg.setlang(get_userlang(getjid(who)))
         msg = msg.getvalue()
 
-    print "%s: %s" % (who, msg)
     m = jabber.Message(getjid(who), msg)
     m.setFrom(JID)
     m.setType('chat')
     if conf.general.debug > 1:
         print '...Begin....................', who
     con.send(m)
-    #   time.sleep(.1)
-    
+    time.sleep(.1)
 
 def sendtoall(msg, butnot=[], including=[], status = None):
     global lastlog, msgname
@@ -354,7 +352,6 @@ def sendtoall(msg, butnot=[], including=[], status = None):
             else:
                 print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode(locale.getdefaultlocale()[1])
     for i in r.getJIDs():
-        print i, uset.mutechange.get(i)
         #away represents users that don't want to chat
         if getdisplayname(i) in butnot or has_userflag(getcleanname(i), 'away'):
             continue
