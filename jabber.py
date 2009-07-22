@@ -155,7 +155,7 @@ class Connection(xmlstream.Client):
 
     def send(self, what):
         """Sends a jabber protocol element (Node) to the server"""
-        xmlstream.Client.write(self,unicode(what))
+        xmlstream.Client.write(self, unicode(what))
 
     def dispatch(self, root_node ):
         """Called internally when a 'protocol element' is recieved.
@@ -730,8 +730,6 @@ class Protocol:
 
     def setNode(self, node):
         self._node.insertNode(node)
-
-
 
 class Message(Protocol):
     """Builds on the Protocol class to provide an interface for sending

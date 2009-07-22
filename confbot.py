@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """confbot -- a conference bot for google talk."""
 
-import sys, time, traceback, re, sqlite3, datetime
+import sys, time, traceback, re, sqlite3, datetime, logging
 import jabber, xmlstream, i18n
 import os.path
 import locale
@@ -36,14 +36,15 @@ userinfo = None
 nick = None
 db = None
 
+LOG_FILENAME = "debug.log"
+logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG,)
+
 #Various Global Variables
 msgname = None
 silent = None
 qu = an = ra = None
 
-xmllogf = open("xmpp.log","w")
 last_activity = time.time()
-# xmllogf = sys.stderr
 lastlog = []
 
 class ADMIN_COMMAND(Exception):pass
@@ -1083,15 +1084,14 @@ def messageCB(con,msg):
             print '>>>', time.strftime('%Y-%m-%d %H:%M:%S'), '[MESSAGE]', unicode(msg).encode(locale.getdefaultlocale()[1])
         except:
             print '>>>', time.strftime('%Y-%m-%d %H:%M:%S'), '[MESSAGE]', unicode(msg).encode('utf-8')
-    if msg.getError()!=None:
+
+    if msg.getError() != None:
         if conf.general.debug > 2:
-            try:
-                print '>>> [ERROR]', unicode(msg).encode(locale.getdefaultlocale()[1])
-            except:
-                print '>>> [ERROR]', unicode(msg).encode('utf-8')
-        #if statuses.has_key(getdisplayname(msg.getFrom())):
+            logging.error(msg)
+
+        # if statuses.has_key(getdisplayname(msg.getFrom())):
         #   sendstatus(unicode(msg.getFrom()),_("away"), _("Blocked"))
-        #boot(msg.getFrom().getStripped())
+        # boot(msg.getFrom().getStripped())
     elif msg.getBody():
         #check quality
         if msg.getFrom().getStripped() == getjid(JID):
@@ -1104,7 +1104,6 @@ def messageCB(con,msg):
                     if conf.general.debug > 1:
                         print '>>>', time.strftime('%Y-%m-%d %H:%M:%S'), 'RECONNECT... network delay it too long: %d\'s' % (t1-t)
                     raise RECONNECT_COMMAND
-            xmllogf.flush()
             return
         userjid[whoid] = unicode(msg.getFrom())
         if len(msg.getBody())>1024 and not issadmin(whoid):
@@ -1126,7 +1125,6 @@ def messageCB(con,msg):
             if has_userflag(msg.getFrom().getStripped(), 'away'):
                 del_userflag(msg.getFrom().getStripped(), 'away')
                 #systoone(msg.getFrom().getStripped(), _('Warning: Because you set "away" flag, so you can not receive and send any message from this bot, until you reset using "/away" command'))
-                #xmllogf.flush()
                 #return
             global suppressing,last_activity,msgname
             suppressing=0
@@ -1139,8 +1137,6 @@ def messageCB(con,msg):
             msgname = getdisplayname(whoid)
             sendtoall('%s' % (msgfilter),
                     butnot=[getdisplayname(msg.getFrom())],)
-
-    xmllogf.flush() # just so flushes happen regularly
 
 def presenceCB(con,prs):
     if conf.general.debug > 3:
@@ -1324,7 +1320,7 @@ def connect():
         print '>>> host is [%s]' % general['server']
         print '>>> account is [%s]' % general['account']
         print '>>> resource is [%s]' % general['resource']
-    con = jabber.Client(host=general['server'], debug=False, log=xmllogf,
+    con = jabber.Client(host=general['server'], debug=False,
                         port=5223, connection=xmlstream.TCP_SSL)
     print ">>> Logging in"
     con.connect()

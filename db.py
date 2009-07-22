@@ -6,7 +6,7 @@ import sqlite3, datetime, glob, sys, re, os
 DBNAME = "bot.db"
 
 def insert_entry(db, entry):
-    db.execute("INSERT INTO log VALUES (?, ?, ?)", (entry["time"], entry["from"], entry["msg"]))
+    db.execute("INSERT INTO log VALUES (?, ?, ?)", (entry["time"], entry["sender"], entry["msg"]))
 
 def import_log(db, log):
     line_re = re.compile("^([0-9]+-[0-9]+-[0-9]+) ([0-9]+:[0-9]+:[0-9]+) <([^>]+)> (.+)$")
@@ -21,7 +21,7 @@ def import_log(db, log):
 
             entry = {}
             entry["time"] = datetime.datetime.strptime("%s %s" % (m.group(1), m.group(2)), "%Y-%m-%d %H:%M:%S")
-            entry["from"] = m.group(3).strip()
+            entry["sender"] = m.group(3).strip()
             entry["msg"] = m.group(4)
         else:
             if not log_re.match(line) and entry and not line[:-1].startswith("The bot is started"):
@@ -46,11 +46,10 @@ CREATE TABLE "nick" (
 "nick" TEXT );
 CREATE TABLE "log" (
         "time" timestamp DEFAULT NULL,
-        "from" TEXT DEFAULT NULL,
+        "sender" TEXT DEFAULT NULL,
         "msg" TEXT DEFAULT NULL);
 CREATE INDEX "id_index" ON "nick" ("id");
 CREATE INDEX "nick_index" ON "nick" ("nick");
-CREATE INDEX "from_index" ON "log" ("from");
 COMMIT;""")
     db.commit()
     c.close()
