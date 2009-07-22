@@ -8,6 +8,4 @@ Add a user definable limit to how long a user can receive messages without sendi
 
 Add more options to /anick. I'm looking to add the ability to register nicks, change a nick outside of the normal boundries, and lock nicks. - [Pakattack161]
 
-Update get_svn_version so it can get a revision from a clean version outside of the svn. - [Pakattack161]
-
 Fix the problem of the filter regex not properly updating. - [Pakattack161]

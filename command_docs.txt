@@ -14,34 +14,4 @@ Nick(/nick):
 				is used by "getdisplayname" to speed up the search process.
 			[nickreg] stores all nicks that get registered. Entries in this
 				section are only removed if a user, or admin, unregisters it.
-			
-Question and Answer (/qna):
-	When an admin types /qna it will ask the room a question similar to this:
-		*** Question and Answer
-		Who is the writer of _The Peace War_
-	And the first person to have the answer, in this case "Verno Vinge", 
-	any where in their message gets 1 point added to their score.
-	
-	If you want to add new questions you can do so in Games.ini by
-	adding the question to the end of the category you want. If it has 
-	a space in it surround it in quotation marks ("") and make sure you
-	add a comma (,) at the end of each one.
 
-	To add new categories you'll need to add the name of your category
-	to each section (eg. [Ps]).
-	Here is a short run down of what each is for:
-		[QnA] This is the list that the command uses to know what categories 
-			there are and which to use. If you want to disable one simply change 
-			the 1 to a 0. 
-		[Ps] This is the prefix, or "Who is the writer of" part of the question.
-			(Note: Don't worry about spaces at the end, they get added in later.)
-		[Qs] This is where the actual question, or "_The Peace War_" is.
-			(Note: Make sure all new categories begin with a blank "question")
-		[As] This is where the answers, or "Vernor Vinge" goes. 
-			(Note: They need to be in the same "slot" as the question or your users 
-			will never get any thing right.)
-			(Also Note: At this time the system does not support multipul answers.)
-			
-	The list of Questions and Answers included is just an example to show
-	what it should look like so if you're not sure how it works take a look
-	at the QnAs already in there.

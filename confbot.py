@@ -1,48 +1,17 @@
 #!/usr/bin/env python
-# confbot -- a conference bot for google talk.
-# Copyright (C) 2005 Perry Lorier (aka Isomer) and Limodou
-# 
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-# 
-#
-# This program is distributed in the hope that it will be useful,
-#      but WITHOUT ANY WARRANTY; without even the implied warranty of
-#      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#      GNU General Public License for more details.
-# 
-#      You should have received a copy of the GNU General Public License
-#      along with this program; if not, write to the Free Software
-#      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-##############################################################################
+"""confbot -- a conference bot for google talk."""
 
-#i18n process
-import sys
-import socket
-import jabber
-import xmlstream
-import time
-import random
-import traceback
-import urllib
+import sys, time, traceback, re, sqlite3, datetime
+import jabber, xmlstream, i18n
 import os.path
-import i18n
 import locale
-import threading
-import re
 import commands as cmds
+from dict4ini import DictIni
 
 commandchrs = '/)'
 
-from hawkchat import *
-from dict4ini import DictIni
-
 def getlocale():
     uset = DictIni("usettings.ini")
-    games = DictIni("Games.ini")
     nick = DictIni("nicklist.ini")
     if len(sys.argv)>1:
         conf = DictIni(sys.argv[1])
@@ -61,26 +30,20 @@ def getlocale():
 i18n.install('confbot', 'locale', getlocale())
 
 statcheck = 0
-#global config object
+# global config object
 conf = None 
 userinfo = None
 nick = None
-games = None
+db = None
 
 #Various Global Variables
 msgname = None
 silent = None
 qu = an = ra = None
 
-welcome = _("""Welcome to ConferenceBot %(revision)d
-By Isomer (Perry Lorier) and Limodou
-This conference bot is set up to allow groups of people to chat.
-")help" to list commands, ")quit" to quit
-")lang en" for English, and ")lang zh_CN" for Chinese""")
-
 xmllogf = open("xmpp.log","w")
-last_activity=time.time()
-#xmllogf = sys.stderr
+last_activity = time.time()
+# xmllogf = sys.stderr
 lastlog = []
 
 class ADMIN_COMMAND(Exception):pass
@@ -90,9 +53,16 @@ class CUSS_COMMAND(Exception):pass
 class NOMAN_COMMAND(Exception):pass
 class RECONNECT_COMMAND(Exception):pass
 
-#Define array with all the words in lines.txt
-global chatarray, chatlines
-chatarray, chatlines = parseLineFile('lines.txt')
+def log_message(msg, msgfrom=None):
+    global db
+
+    cur = db.cursor()
+
+    cur.execute("INSERT INTO log VALUES (?, ?, ?)",
+            (datetime.datetime.now(), msgfrom or "", msg))
+
+    db.commit()
+    cur.close()
 
 #==================================================
 #=         String Tools                           =
@@ -338,19 +308,21 @@ def sendtoone(who, msg):
     con.send(m)
     time.sleep(.1)
 
-def sendtoall(msg, butnot=[], including=[], status = None):
+def sendtoall(msg, butnot=[], including=[], status=None):
     global lastlog, msgname
     r = con.getRoster()
+
     if msgname:
-        print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), "<", msgname, ">", msg.encode("utf-8")
+        log_message(msg, msgname)
     else:
-        print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode("utf-8")
-    logf.flush()
+        log_message(msg)
+
     if conf.general.debug:
             if msgname:
                 print time.strftime("%Y-%m-%d %H:%M:%S"), "<", msgname, ">", msg.encode(locale.getdefaultlocale()[1],'replace')
             else:
                 print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode(locale.getdefaultlocale()[1])
+
     for i in r.getJIDs():
         #away represents users that don't want to chat
         if getdisplayname(i) in butnot or has_userflag(getcleanname(i), 'away'):
@@ -374,11 +346,12 @@ def sendtoall(msg, butnot=[], including=[], status = None):
     if len(lastlog)>5:
         lastlog=lastlog[1:]
         
-def sendtoadmin(msg,butnot=[],including=[]):
+def sendtoadmin(msg, butnot=[], including=[]):
     global lastlog
     r = con.getRoster()
-    print >>logf,time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode("utf-8")
-    logf.flush()
+
+    log_message(msg)
+
     if conf.general.debug:
         try:
             print time.strftime("%Y-%m-%d %H:%M:%S"), msg.encode(locale.getdefaultlocale()[1],'replace')
@@ -448,14 +421,14 @@ def boot(jid):
 #=====================================================
 #=         Chat Commands                             =
 #=====================================================
-def cmd(who,msg):
+def cmd(who, msg):
     if " " in msg:
-        cmd,msg=msg.split(" ",1)
+        cmd,msg = msg.split(" ",1)
     else:
-        cmd,msg=msg.strip().lower(),""
+        cmd,msg = msg.strip().lower(),""
     if cmd[:1] in commandchrs:
         cmd=cmd[1:]
-        
+
     cmd = cmd.lower()
     func = None
     try:
@@ -497,12 +470,13 @@ def cmd_nick(who, msg):
         msg = msg.encode(locale.getdefaultlocale()[1])
     except:
         msg = msg.encode("utf7")
+
     nickname = wid = who.getStripped()
     nickconf = nick['nickname']
     nicknow = None
     if nick['nickname'].get(getjid(who)):
         nicknow = nick['nickname'].get(getjid(who)).lower()
-    
+
     #==================
     #= Check for commands that have an optional secondary command first.
     if 'list' in msg:
@@ -571,8 +545,7 @@ def cmd_nick(who, msg):
                 nick.tempnick[msg] = wid    
             nick.nickname[nickname] = msgcap
             
-    #===================
-    #= If the user has a nick remove it else display MSG_COMMAND.
+    # If the user has a nick remove it else display MSG_COMMAND.
     else:
         if hasnick(wid):
             del nick['nickname'][wid]
@@ -823,60 +796,6 @@ def cmd_mode(who, msg):
             return
     systoone(who, _('Usage: /mode [+]s'))
 
-
-#=================================
-#=         Misc Commands         =
-#=================================
-def cmd_version(who, msg):
-    '"/version" Show version of this bot'
-    systoone(who, _('''Revision: %s 
-    
-    Websites:
-    English:
-    http://coders.meta.net.nz/~perry/jabber/confbot.php
-    Chinese:
-    http://www.donews.net/limodou.''').para(revision))
-    
-def cmd_die(who, msg):
-    '"/die" rolls a random number'
-    systoall(_('%s rolls a %s').para(getdisplayname(who),random.randrange(1,7)))
-
-def cmd_dice(who, msg, j = 0, i = 0, dice = 1):
-    '"/dice [<number of dice>] [<number of sides>]" rolls a random number'
-    if not msg:
-        cmd_die(who, msg)
-    
-    elif msg:
-        if msg == 'help':
-            raise MSG_COMMAND
-        else:
-            if ' ' in msg:
-                dice, msg = msg.split(' ',2)
-                if dice.isdigit() and msg.isdigit():
-                    if int(dice) > 20:
-                        systoone(who, _('The number of dice is auto capped at 20.'))
-                    if int(msg) <= 3:
-                        systoone(who, _('Please choose 4 or more sides'))
-                    else:
-                        while int(j) < int(dice) and int(j) < 20:
-                            j = int(j) + 1
-                            i = i + random.randrange(1,int(msg))
-                        systoall(_('%s rolls %s with %s %s-sided dice').para(getdisplayname(who),i,j,msg))
-                                
-                else:
-                    raise MSG_COMMAND
-            
-            else:
-                if msg.isdigit():
-                    if int(msg) > 20:
-                        systoone(who, _('The number of dice is auto capped at 20.'))
-                    while int(j) < int(msg) and int(j) < 20:
-                        j = int(j) + 1
-                        i = i + random.randrange(1,7)
-                    systoall(_('%s rolls %s with %s dice').para(getdisplayname(who),i,j))
-    
-    else:
-        raise MSG_COMMAND
 def cmd_whois(who, msg):
     '"/whois [nick]" View someone\'s status'
     msg = msg.strip().lower()
@@ -1053,7 +972,7 @@ def acmd_anick(who,msg):
     
     elif msg == 'help':
         systoone(who, _('Useage: "/nick <nickname> <command> [<extra>]"\nCommands:\nunreg(ister) - Unregisters the nickname from the nicklist'))
-        
+
 #=================================
 #=         Room Commands         =
 #=================================
@@ -1077,27 +996,17 @@ def acmd_kill(who, msg):
         systoall(_('Room shutdown by <%s>').para(getdisplayname(who)))
     sys.exit(1)
     
-def acmd_refresh(who, msg):
-    '"/refresh" Update the conference bot website'
-    if not running:
-        t = threading.Thread(target=register_site)
-        t.setDaemon(True)
-        t.start()
-        systoone(who, _('Refreshing the website'))
-    else:
-        systoone(who, _('Refresh already in progress'))
-        
 def acmd_reload(who, msg):
     '"/reload" Reload the config'
     readall()
-    chatarray, chatlines = parseLineFile('lines.txt')
     systoone(who, _('Bot reloaded.'))
 
-        
 #===============================
 #=         DB Commands         =
 #===============================
-options = ['language', 'private', 'hide_status', 'debug', 'topic', 'sysprompt', 'logfileformat', 'status', 'maxnicklen', 'floodback']
+options = [ 'language', 'private', 'hide_status', 'debug',
+            'topic', 'sysprompt', 'status', 'maxnicklen', 'floodback']
+
 def acmd_setoption(who, msg):
     '"/setoption option value" Set an option\'s value'
     msg = msg.strip().lower()
@@ -1139,52 +1048,6 @@ def acmd_listoptions(who, msg):
             value = conf.general[option]
         txt.append("%s : %s" % (option, value))
     systoone(who, _('Options: \n%s').para('\n'.join(txt)))
-
-#=================================
-#=         Misc Commands         =
-#=================================
-def acmd_qna(who, msg, butnot=[], including=[], status = None):
-    '"/qna" Start a Question and Answer game'
-    
-    user = butnot[:]
-    
-    global qu, an, ra
-    Qs = games.Qs
-    As = games.As
-    Ps = games.Ps
-    qnalist = games.QnA
-    
-    #=======================
-    #= Get the list of lists
-    list = qnalist.keys()
-    ra = random.randrange(1,len(list))
-    list = list[ra]
-    
-    #=======================
-    #= Check to see if the list should be used.
-    while qnalist[list] == 0:
-        ra = random.randrange(1,len(list))
-        list = list[ra]
-        
-    #======================
-    #= Set the lists to be used.
-    prefix = Ps[list][0]
-    qu = Qs[list]
-    an = As[list]
-    listq = len(qu)
-    ra = None
-    
-    if msg:
-        systoone(who, _('Currently under construction.'))
-
-    else:
-        nra = random.randrange(1,listq)
-        while nra == ra:
-            nra = random.randrange(1,listq)
-        ra = nra
-        systoall('Question and Answer')
-        sendtoall(prefix +" "+ qu[ra], user, including, status)
-        qna = an[ra]
 
 def acmd_spam(who, msg):
     msg = msg.lower()
@@ -1251,7 +1114,7 @@ def messageCB(con,msg):
                     systoone(whoid, _('Thank you for trying to flood our chat room. Here is some refreshing water for you.'))
                     i = i + 1
                 return
-            #systoall(_("%s is being a moron trying to flood the channel").para(getdisplayname(msg.getFrom())))
+
         elif ismuted(whoid):
             systoone(whoid, _('You are muted and cannot talk.'))
         elif msg.getBody()[:1] in commandchrs:
@@ -1259,7 +1122,7 @@ def messageCB(con,msg):
                 print '......CMD......... %s [%s]' % (msg.getFrom(), msg.getBody())
             cmd(msg.getFrom(),msg.getBody())
         else:
-            #check away
+            # check away
             if has_userflag(msg.getFrom().getStripped(), 'away'):
                 del_userflag(msg.getFrom().getStripped(), 'away')
                 #systoone(msg.getFrom().getStripped(), _('Warning: Because you set "away" flag, so you can not receive and send any message from this bot, until you reset using "/away" command'))
@@ -1276,41 +1139,8 @@ def messageCB(con,msg):
             msgname = getdisplayname(whoid)
             sendtoall('%s' % (msgfilter),
                     butnot=[getdisplayname(msg.getFrom())],)
-            
-            #==================
-            #= Extra Message Handlers
-            hawkchat = conf.hawkchat
-            if hawkchat.replyrate > 0 and msgfilter.lower().startswith('hawk:'):
-                hawkchat(msgfilter)
 
-            if conf.hawkchat.learn == 1:
-                if len(msgfilter.split()) >= hawkchat.sentencelen:
-                    chatline = msgfilter + "\n"
-                    chatline = re.sub('Hawk: ','', chatline)
-                    f = file('lines.txt', 'a+')
-                    for line in f:
-                        if chatline == line:
-                            chatline = None
-                    if chatline:
-                        f.write(chatline)
-                        #Add the new line into the chatarray.
-                        chatarray.append(parseLine(chatline))
-                        chatlines.append(chatline)
-                    f.close()
-            
-            if os.path.getsize("Games.ini") != 0:
-                global ra
-                if ra:
-                    if an[ra].lower() in msg.getBody().lower():
-                        systoall (_('%s got the answer to \"%s\" right!').para(getdisplayname(whoid,1), qu[ra]))
-                        score = 1
-                        if games['QnA Scores'].get(whoid, ""):
-                            score = 1 + int(games['QnA Scores'].get(whoid, ""))
-                        games['QnA Scores'][whoid] = score
-                        ra = None
-                        saveGames()
     xmllogf.flush() # just so flushes happen regularly
-
 
 def presenceCB(con,prs):
     if conf.general.debug > 3:
@@ -1342,11 +1172,6 @@ def presenceCB(con,prs):
         boot(prs.getFrom().getStripped())
         print ">>> Unsubscribe from",who
     elif type == 'subscribed':
-        if i18n.isobj(welcome):
-            wel = welcome.getvalue()
-        else:
-            wel = welcome
-        systoone(whoid, wel % {'revision':revision})
         systoone(whoid, _('''Topic: %(topic)s
             %(lastlog)s''').para({
             "topic" : conf.general['topic'],
@@ -1375,15 +1200,14 @@ def presenceCB(con,prs):
         if conf.general.debug > 3:
             print ">>> Unknown presence:",who,type
 
-
 def iqCB(con,iq):
     # reply to all IQ's with an error
-    reply=None
+    reply = None
     try:
         # Google are bad bad people
         # they don't put their query inside a <query> in <iq>
-        reply=jabber.Iq(to=iq.getFrom(),type='error')
-        stuff=iq._node.getChildren()
+        reply = jabber.Iq(to=iq.getFrom(),type='error')
+        stuff = iq._node.getChildren()
         for i in stuff:
             reply._node.insertNode(i)
         reply.setError('501', _('Feature not implemented'))
@@ -1406,17 +1230,15 @@ def saveall():
     try:
         saveconfig()
         savenicklist()
-        saveGames()
     except:
         traceback.print_exc()
         
 def readall():
     readconfig()
     readnicklist()
-    readGames()
-    
+
 def readconfig():
-    global conf, welcome, userinfo
+    global conf, userinfo
 
     conf = DictIni()
     
@@ -1431,20 +1253,11 @@ def readconfig():
     conf.general.sysprompt = '***'
     conf.general.logpath = 'logs'
     conf.general.language = ''
-    conf.general.logfileformat = '%Y%m%d'
     conf.general.status = _('Ready')
     conf.general.maxnicklen = 10
     conf.general.floodback = 0
-    
-    #=====================
-    #= Hawk Chat Config
-    conf.hawkchat.replyrate = 0
-    conf.hawkchat.learn = 0
-    conf.hawkchat.sentencelen = 1
-    conf.hawkchat.callname = "Hawk"
-    
-    
-    if len(sys.argv)>1:
+
+    if len(sys.argv) > 1:
         conf.setfilename(sys.argv[1])
         conf.read(sys.argv[1])
     else:
@@ -1469,10 +1282,6 @@ def readconfig():
         admin = raw_input().lower()
         conf.userinfo[admin] = ['user', 'super']
             
-    #deal with welcome message
-    if os.path.exists('welcome.txt'):
-        welcome = unicode(file('welcome.txt').read(), encoding)
-
     userinfo = conf.userinfo
             
 def saveconfig():
@@ -1485,7 +1294,6 @@ def saveconfig():
         conf.general.status = conf.general.status.encode(encoding)
         
         conf.save()
-        file('welcome.txt', 'w').write(welcome.encode(encoding))
     except:
         traceback.print_exc()
         
@@ -1503,28 +1311,12 @@ def savenicklist():
         nick.save()
     except:
         traceback.print_exc()
-        
-def readGames():
-    global games
 
-    games = DictIni()
-    
-    games.setfilename("Games.ini")
-    games.read("Games.ini")
-        
-def saveGames():
-    "Saves the Games to disk"
-    try:    
-        games.save()
-    except:
-        traceback.print_exc()
-        
 def connect():
-    global con, revision
+    global con
+
     debug = conf.general.debug
-    
-    revision = get_vcs_version()
-    
+
     print ">>> Connecting"
     general = conf.general
     if debug:
@@ -1532,7 +1324,7 @@ def connect():
         print '>>> host is [%s]' % general['server']
         print '>>> account is [%s]' % general['account']
         print '>>> resource is [%s]' % general['resource']
-    con = jabber.Client(host=general['server'],debug=False ,log=xmllogf,
+    con = jabber.Client(host=general['server'], debug=False, log=xmllogf,
                         port=5223, connection=xmlstream.TCP_SSL)
     print ">>> Logging in"
     con.connect()
@@ -1556,141 +1348,85 @@ def connect():
     sendpresence(conf.general['status'])
     
 #   systoall(_('The channel has started.'))
-    print '>>> Online with Revision %s' % revision
-    print >>logf, 'The bot is started!', time.strftime('%Y-%m-%d %H:%M:%S')
-    
+    print '>>> Online with Revision %s' % get_vcs_version()
+    log_message('The bot is started!')
 
-def register_site():
-    global last_update, running
-    
-    running = True
-    
+if __name__ == '__main__':
+    readall()
+
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+
+    # make command list
+    commands = {}
+    acommands = {}
+    import types
+    for i, func in globals().items():
+        if isinstance(func, types.FunctionType):
+            if i.startswith('cmd_'):
+                commands[i.lower()[4:]] = func
+            elif i.startswith('acmd_'):
+                acommands[i.lower()[5:]] = func
+
     general = conf.general
-    print '>>> Registing site'
-    roster=con.getRoster()
-    args={
-        'action':'register',
-        'account':"%s@%s" % (general['account'], general['server']),
-        'users':len(con.getRoster().getJIDs()),
-        'alive_users':len([i 
-            for i in roster.getJIDs() 
-            if roster.getOnline(unicode(i)) in ['available','chat','online',None]
-            ]),
-        'last_activity':time.time()-last_activity,
-        'admin':' '.join(
-            [ k 
-                for k,v in userinfo.items() 
-                if "super" in v
-            ]),
-        'lang': conf.general['language'],
-        'version':revision,
-        'topic':general['topic'],
-        }
-    try:
-        urllib.urlretrieve('http://coders.meta.net.nz/~perry/jabber/confbot.php?'+urllib.urlencode(args))
-        print ">>> Updated directory site"
-    except:
-        print ">>> Can't reach the directory site"
-        traceback.print_exc()
-    last_update = time.time()
+    db = sqlite3.connect("bot.db")
+    con = None
+    JID = "%s@%s/%s" % (general['account'], general['server'], general['resource'])
+    last_update=(time.time()-4*60*60)+60 # Send the update in 60 seconds
+    last_ping=0
+    last_testing=0
+    userjid = {}    #saving real jid just like "xxx@gmail.com/gtalkxxxxx"
+    reconnectime = 30   #network delay exceed this time, so the bot need to reconnect
+
+    ontesting = False
+
     running = False
-    
-readall()
-saveall()
+    while 1:
+        try:
+            # create new log file as next day
+            general = conf.general
 
-def hawkchat(input):
-    reply = chatReply(input)
-    if reply:
-        sendtoall("<Hawk> "+ reply)
-    return
-    
-#set system default encoding to support unicode
-reload(sys)
-sys.setdefaultencoding('utf-8')
+            if not con:
+                connect()
 
-#make command list
-commands = {}
-acommands = {}
-import types
-for i, func in globals().items():
-    if isinstance(func, types.FunctionType):
-        if i.startswith('cmd_'):
-            commands[i.lower()[4:]] = func
-        elif i.startswith('acmd_'):
-            acommands[i.lower()[5:]] = func
+            # Send some kind of dummy message every few minutes to make
+            # sure that the connection is still up, and to tell google talk
+            # we're still here.
+            if time.time() - last_ping>120: # every 2 minutes
+                # Say we're online.
+                p = jabber.Presence()
+                p.setFrom(JID)
+                con.send(p)
+                sendpresence(conf.general['status'])
+                last_ping = time.time()
 
-general = conf.general
+            # every 40 seconds
+            if time.time() - last_testing > 60:
+                # test quality
+                # mean that callback message doesn't be processed, so reconnect again
+                if ontesting:
+                    print '>>>', time.strftime('%Y-%m-%d %H:%M:%S'), 'RECONNECT... network delay it too long: %d\'s' % (time.time()-last_testing)
+                    raise RECONNECT_COMMAND
+                else:
+                    ontesting = True
+                    m = jabber.Message(to=JID, body='Q' + str(int(time.time())) + ':' + time.strftime('%Y-%m-%d %H:%M:%S'))
+                    con.send(m)
+                    if conf.general.debug > 1:
+                        print '>>> Quality testing...', time.strftime('%Y-%m-%d %H:%M:%S')
+                    last_testing = time.time()
 
-#logfile process
-if not os.path.isdir(general['logpath']) and not general['logpath'] == '':
-    os.mkdir(general['logpath'])
-    print "ALERT: Log directory doesn't exist, making folder \""+ general['logpath'] +"\""
-logf = file(os.path.join(general['logpath'], time.strftime(general['logfileformat']) + '.log'), "a+")
+            con.process(1)
+        except KeyboardInterrupt:
+            break
+        except SystemExit:
+            break
+        except RECONNECT_COMMAND:
+            con = None
+            ontesting = False
+            last_testing = 0
+            last_ping = 0
+        except:
+            traceback.print_exc()
+            time.sleep(1)
+            con = None
 
-con = None
-JID="%s@%s/%s" % (general['account'], general['server'], general['resource'])
-last_update=(time.time()-4*60*60)+60 # Send the update in 60 seconds
-last_ping=0
-last_testing=0
-userjid = {}    #saving real jid just like "xxx@gmail.com/gtalkxxxxx"
-reconnectime = 30   #network delay exceed this time, so the bot need to reconnect
-
-ontesting = False
-
-running = False
-while 1:
-    try:
-        #create new log file as next day
-        general = conf.general
-        logfile = os.path.join(general['logpath'], time.strftime(general['logfileformat']) + '.log')
-        if not os.path.exists(logfile):
-            logf = file(logfile, "a+")
-            
-        if not con:
-            connect()
-        # We announce ourselves to a url, this url then keeps track of all
-        # the conference bots that are running, and provides a directory
-        # for people to browse.
-        if time.time()-last_update>4*60*60 and not general['private']: # every 4 hours
-            if not running:
-                t = threading.Thread(target=register_site)
-                t.setDaemon(True)
-                t.start()
-        # Send some kind of dummy message every few minutes to make
-        # sure that the connection is still up, and to tell google talk
-        # we're still here.
-        if time.time()-last_ping>120: # every 2 minutes
-            # Say we're online.
-            p = jabber.Presence()
-            p.setFrom(JID)
-            con.send(p)
-            sendpresence(conf.general['status'])
-            last_ping = time.time()
-
-        if time.time()-last_testing>60: # every 40 seconds
-            #test quality
-            if ontesting:   #mean that callback message doesn't be processed, so reconnect again
-                print '>>>', time.strftime('%Y-%m-%d %H:%M:%S'), 'RECONNECT... network delay it too long: %d\'s' % (time.time()-last_testing)
-                raise RECONNECT_COMMAND
-            else:
-                ontesting = True
-                m = jabber.Message(to=JID, body='Q' + str(int(time.time())) + ':' + time.strftime('%Y-%m-%d %H:%M:%S'))
-                con.send(m)
-                if conf.general.debug > 1:
-                    print '>>> Quality testing...', time.strftime('%Y-%m-%d %H:%M:%S')
-                last_testing = time.time()
-
-        con.process(1)
-    except KeyboardInterrupt:
-        break
-    except SystemExit:
-        break
-    except RECONNECT_COMMAND:
-        con = None
-        ontesting = False
-        last_testing = 0
-        last_ping = 0
-    except:
-        traceback.print_exc()
-        time.sleep(1)
-        con = None

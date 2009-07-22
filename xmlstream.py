@@ -482,8 +482,8 @@ class Stream:
         if self._logFH is not None:
 	    if self._timestampLog:
 	    	ts=time.asctime(time.localtime(time.time()))
-		inout=inout.encode('ascii','replace')
-		data=data.encode('ascii','replace')
+		inout=inout.encode('utf-8','replace')
+		data=data.encode('utf-8','replace')
 		self._logFH.write("%s - %s - %s\n" % (ts,inout,data))
 	    else:
 		self._logFH.write((u"%s - %s\n" % (inout, data )).encode('utf-8') )
