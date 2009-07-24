@@ -2,11 +2,13 @@
 """confbot -- a conference bot for google talk."""
 
 import sys, time, traceback, re, sqlite3, datetime, logging
-import jabber, xmlstream, i18n
+import jabber, xmlstream, i18n, stomp
 import os.path
 import locale
 import commands as cmds
 from dict4ini import DictIni
+import simplejson as json
+import socket
 
 commandchrs = '/)'
 
@@ -54,16 +56,36 @@ class CUSS_COMMAND(Exception):pass
 class NOMAN_COMMAND(Exception):pass
 class RECONNECT_COMMAND(Exception):pass
 
+def send_stomp_msg(message, destination):
+    connected = False
+    while not connected:
+        try:
+            conn = stomp.Connection()
+            conn.start()
+            conn.connect()
+            conn.send(' ' + message, destination=destination)
+            conn.disconnect()
+            connected = True
+        except socket.error:
+            pass
+
 def log_message(msg, msgfrom=None):
     global db
 
     cur = db.cursor()
+    now = datetime.datetime.now()
 
     cur.execute("INSERT INTO log VALUES (?, ?, ?)",
-            (datetime.datetime.now(), msgfrom or "", msg))
+            (now, msgfrom or "", msg))
 
     db.commit()
     cur.close()
+
+    body = { "time": now.strftime("%H:%M:%S"), "msg": msg }
+    if msgfrom:
+        body["sender"] = msgfrom
+
+    send_stomp_msg(' ' + json.dumps(body), destination='/group/%s' % general["identifier"])
 
 #==================================================
 #=         String Tools                           =
