@@ -48,6 +48,7 @@ qu = an = ra = None
 
 last_activity = time.time()
 lastlog = []
+stomp_conn = None
 
 class ADMIN_COMMAND(Exception):pass
 class TOOLOW_COMMAND(Exception):pass
@@ -56,18 +57,16 @@ class CUSS_COMMAND(Exception):pass
 class NOMAN_COMMAND(Exception):pass
 class RECONNECT_COMMAND(Exception):pass
 
+def stomp_connect():
+    stomp_conn = stomp.Connection()
+    stomp_conn.start()
+    stomp_conn.connect()
+
 def send_stomp_msg(message, destination):
-    connected = False
-    while not connected:
-        try:
-            conn = stomp.Connection()
-            conn.start()
-            conn.connect()
-            conn.send(' ' + message, destination=destination)
-            conn.disconnect()
-            connected = True
-        except socket.error:
-            pass
+    if not stomp_conn:
+        stomp_connect()
+
+    stomp_conn.send(' ' + message, destination=destination)
 
 def log_message(msg, msgfrom=None):
     global db
@@ -85,7 +84,10 @@ def log_message(msg, msgfrom=None):
     if msgfrom:
         body["sender"] = msgfrom
 
-    send_stomp_msg(' ' + json.dumps(body), destination='/group/%s' % general["identifier"])
+    try:
+        send_stomp_msg(' ' + json.dumps(body), destination='/group/%s' % general["identifier"])
+    except:
+        pass
 
 #==================================================
 #=         String Tools                           =
@@ -329,7 +331,7 @@ def sendtoone(who, msg):
     if conf.general.debug > 1:
         print '...Begin....................', who
     con.send(m)
-    time.sleep(.1)
+    # time.sleep(.1)
 
 def sendtoall(msg, butnot=[], including=[], status=None):
     global lastlog, msgname
@@ -1434,6 +1436,7 @@ if __name__ == '__main__':
                     last_testing = time.time()
 
             con.process(1)
+
         except KeyboardInterrupt:
             break
         except SystemExit:
@@ -1447,4 +1450,7 @@ if __name__ == '__main__':
             traceback.print_exc()
             time.sleep(1)
             con = None
+
+    if stomp_conn:
+        stomp_conn.disconnect()
 
